@@ -7,8 +7,8 @@ import tkinter as tk
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    sys.platform.startswith("linux") and not os.environ.get("DISPLAY"),
-    reason="GUI integration requires Xvfb or a graphical display",
+    not (sys.platform.startswith("linux") and os.environ.get("DISPLAY")),
+    reason="Live GUI tests run in the dedicated Linux Xvfb job",
 )
 
 from cede.gui import MainWindow
@@ -44,4 +44,51 @@ def test_scan_cancellation_keeps_window_responsive():
         assert "disabled" in window.cancel_button.state()
     finally:
         release.set()
+        window.destroy()
+
+
+def test_testing_dashboard_evaluates_and_filters_real_tk_window(tmp_path):
+    """Drive the dashboard using a display in the dedicated Xvfb CI job."""
+    import json
+
+    root = tmp_path / "rust_corpus"
+    root.mkdir()
+    (root / "clean.rs").write_text(
+        'fn main(){ std::process::Command::new("echo").arg("ok").status().unwrap(); }'
+    )
+    (root / "broken.rs").write_text("fn broken( {")
+    (root / "manifest.json").write_text(json.dumps({"cases": [
+        {"path": "rust_corpus/clean.rs", "expected": "High"},
+        {"path": "rust_corpus/broken.rs", "expected": "ParseError"},
+    ]}))
+
+    window = MainWindow()
+    window.withdraw()
+    dashboard = None
+    try:
+        dashboard = window.on_test_dashboard()
+        dashboard.withdraw()
+        dashboard.suite_path.set(str(root))
+        dashboard.start_run()
+        assert dashboard._running
+        assert "disabled" in dashboard.run_button.state()
+
+        deadline = time.monotonic() + 5
+        while dashboard._running and time.monotonic() < deadline:
+            window.update()
+            time.sleep(0.01)
+
+        assert dashboard.result is not None
+        assert dashboard.result.failed == 1
+        assert dashboard.result.skipped == 1
+        assert len(dashboard.table.get_children()) == 2
+        assert "1 failed" in dashboard.summary.get()
+        dashboard.only_failures.set(True)
+        dashboard._populate()
+        assert len(dashboard.table.get_children()) == 1
+        assert "disabled" not in dashboard.run_button.state()
+        assert window.report.findings == []
+    finally:
+        if dashboard is not None:
+            dashboard._close()
         window.destroy()

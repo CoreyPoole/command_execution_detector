@@ -45,6 +45,9 @@ class MainWindow(tk.Tk):
         self.cancel_button = ttk.Button(bar, text="Cancel Scan",
                                         command=self.on_cancel, state="disabled")
         self.cancel_button.pack(side="left", padx=(0, 6))
+        ttk.Button(bar, text="Test Dashboard", command=self.on_test_dashboard).pack(
+            side="left", padx=(0, 6)
+        )
 
         self._filter_var = tk.StringVar(value="All")
         right = ttk.Frame(bar)
@@ -119,6 +122,11 @@ class MainWindow(tk.Tk):
     def _report_progress(self, current, total, file):
         # This callback may be invoked on the worker thread.
         self._results.put(("progress", current, total, file))
+
+    def on_test_dashboard(self):
+        from .testing_dashboard_gui import TestingDashboardWindow
+        dashboard = TestingDashboardWindow(self, rules=self.controller.rules)
+        return dashboard
 
     def on_filter_changed(self):
         label = self._filter_var.get()
