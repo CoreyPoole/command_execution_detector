@@ -312,6 +312,31 @@ class TaintAnalyzer:
             return self._defs_cache[key]
         defs: dict[str, list] = {}
 
+        # Visibility of a local declaration is limited to its enclosing block.
+        # An inner `let` must not overwrite a different outer binding.
+        site = min(
+            (n for n in tree.walk(fn)
+             if n.start_byte <= cutoff <= n.end_byte),
+            key=lambda n: n.end_byte - n.start_byte,
+            default=fn,
+        )
+        visible_blocks = set()
+        cursor = site
+        while cursor is not None:
+            if cursor.type == "block":
+                visible_blocks.add(cursor.id)
+            cursor = cursor.parent
+
+        def conditional(n):
+            parent = n.parent
+            while parent is not None and parent != fn:
+                if parent.type in ("if_expression", "match_expression",
+                                   "while_expression", "for_expression",
+                                   "loop_expression"):
+                    return True
+                parent = parent.parent
+            return False
+
         def add(name, expr):
             defs.setdefault(name, []).append(expr)
 
@@ -323,17 +348,28 @@ class TaintAnalyzer:
                 continue
             t = n.type
             if t in ("let_declaration", "let_condition"):
+                # Do not leak inner-block shadowed locals into outer scope.
+                block = n.parent
+                while block is not None and block.type not in ("block", "function_item"):
+                    block = block.parent
+                if block is not None and block.type == "block" and block.id not in visible_blocks:
+                    continue
                 pat, val = n.child_by_field_name("pattern"), n.child_by_field_name("value")
                 if pat is not None and val is not None:
                     for name in pattern_names(pat):
-                        defs[name] = [val]
+                        if conditional(n):
+                            add(name, val)
+                        else:
+                            defs[name] = [val]
             elif t in ("assignment_expression", "compound_assignment_expr"):
                 left, right = n.child_by_field_name("left"), n.child_by_field_name("right")
                 if left is not None and right is not None:
                     for name in pattern_names(left):
-                        if t == "assignment_expression":
+                        if t == "assignment_expression" and not conditional(n):
                             defs[name] = [right]
                         else:
+                            # A branch/loop may not execute, so merge the
+                            # incoming and assigned paths conservatively.
                             add(name, right)
             elif t == "for_expression":
                 pat, val = n.child_by_field_name("pattern"), n.child_by_field_name("value")

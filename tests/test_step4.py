@@ -690,3 +690,58 @@ def test_invalid_rules_are_rejected_with_clear_error(tmp_path, capsys):
     assert "cannot load rules" in capsys.readouterr().err
     rules.write_text('{"sanitizers": "sanitize"}')
     assert CliApp().run([str(SAMPLES / "safe.rs"), "--rules", str(rules)]) == 2
+
+
+# ---- Conservative branch and lexical scope handling ---------------------
+
+def test_if_assignment_may_taint_command():
+    src = """
+    fn f() {
+        let mut cmd = String::from("safe");
+        if std::env::args().len() > 1 {
+            cmd = std::env::args().nth(1).unwrap();
+        }
+        Command::new("sh").arg("-c").arg(cmd).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_match_assignment_may_taint_command():
+    src = """
+    fn f() {
+        let mut cmd = String::from("safe");
+        match std::env::var("X") {
+            Ok(value) => { cmd = value; }
+            Err(_) => {}
+        };
+        Command::new("sh").arg("-c").arg(cmd).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_unconditional_overwrite_after_branch_clears_taint():
+    src = """
+    fn f() {
+        let mut cmd = String::from("safe");
+        if true { cmd = std::env::var("X").unwrap(); }
+        cmd = String::from("safe again");
+        Command::new("echo").arg(cmd).spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
+
+
+def test_inner_block_shadow_does_not_escape():
+    src = """
+    fn f() {
+        let input = String::from("safe");
+        {
+            let input = std::env::args().nth(1).unwrap();
+            println!("{}", input);
+        }
+        Command::new("echo").arg(input).spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
