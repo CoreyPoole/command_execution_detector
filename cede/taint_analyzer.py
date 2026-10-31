@@ -39,10 +39,15 @@ class TaintAnalyzer:
         self._local_fns: dict[str, bool] = {}
         self._function_nodes: dict = {}
         self._callsites: dict = {}
+        self._external_param_flows: dict = {}
+        self._external_call_returns: dict = {}
 
     # -- public API ---------------------------------------------------------
-    def trace(self, tree: SyntaxTree, sinks: list[Sink]) -> list[TaintPath]:
+    def trace(self, tree: SyntaxTree, sinks: list[Sink],
+              external_param_flows=None, external_call_returns=None) -> list[TaintPath]:
         # Never carry syntax nodes/definitions from one source tree to another.
+        self._external_param_flows = external_param_flows or {}
+        self._external_call_returns = external_call_returns or {}
         self._defs_cache.clear()
         self._local_fns = self._collect_local_fns(tree, sinks)
         self._index_local_calls(tree)
@@ -151,7 +156,7 @@ class TaintAnalyzer:
         if name not in params:
             return []
         index = params.index(name)
-        flows = []
+        flows = list(self._external_param_flows.get(key, []))
         for call in self._callsites.get(tree.text(fn_name), []):
             args = call.child_by_field_name("arguments")
             if args is None or len(args.named_children) <= index:
@@ -235,6 +240,9 @@ class TaintAnalyzer:
             fn = node.child_by_field_name("function")
             fn_text = tree.text(fn) if fn is not None else ""
             sources = [(kind, False) for kind in self._sources_in(fn_text)]
+            # A project scan may resolve a function defined in another file.
+            if node.start_byte in self._external_call_returns:
+                return sources + list(self._external_call_returns[node.start_byte])
             local_fn = (self._function_nodes.get(fn_text)
                         if fn is not None and fn.type == "identifier" else None)
             if local_fn is not None and not self._is_sanitizer(fn_text):
