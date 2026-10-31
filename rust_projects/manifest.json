@@ -240,6 +240,125 @@
         }
       ],
       "description": "Static Windows shell in helper"
+    },
+    {
+      "name": "21_cargo_user_shell",
+      "directory": "rust_projects/21_cargo_user_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Standard Cargo src layout with user input to shell"
+    },
+    {
+      "name": "22_cargo_safe_arg",
+      "directory": "rust_projects/22_cargo_safe_arg",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Standard Cargo src layout with fixed argument"
+    },
+    {
+      "name": "23_cargo_nested_module",
+      "directory": "rust_projects/23_cargo_nested_module",
+      "files_scanned": 3,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/tools/runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Nested Cargo source modules and qualified calls"
+    },
+    {
+      "name": "24_cargo_explicit_import",
+      "directory": "rust_projects/24_cargo_explicit_import",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Imported helper across standard src files"
+    },
+    {
+      "name": "25_cargo_return_literal",
+      "directory": "rust_projects/25_cargo_return_literal",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Safe return from Cargo module"
+    },
+    {
+      "name": "26_cargo_return_env_program",
+      "directory": "rust_projects/26_cargo_return_env_program",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/main.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Env var selects executable through a Cargo module return"
+    },
+    {
+      "name": "27_cargo_two_findings",
+      "directory": "rust_projects/27_cargo_two_findings",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "High"
+        },
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Multiple severities in src module"
+    },
+    {
+      "name": "28_cargo_file_arg",
+      "directory": "rust_projects/28_cargo_file_arg",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "File source propagated through Cargo module"
+    },
+    {
+      "name": "29_cargo_unused_source",
+      "directory": "rust_projects/29_cargo_unused_source",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Ignore unconnected untrusted source"
+    },
+    {
+      "name": "30_cargo_static_shell",
+      "directory": "rust_projects/30_cargo_static_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Low"
+        }
+      ],
+      "description": "Static shell in Cargo package"
     }
   ]
 }

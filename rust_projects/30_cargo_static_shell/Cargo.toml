@@ -1,0 +1,4 @@
+[package]
+name = "cede_case_30"
+version = "0.1.0"
+edition = "2021"

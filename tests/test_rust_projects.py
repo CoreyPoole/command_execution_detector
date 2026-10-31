@@ -23,7 +23,7 @@ def test_multi_file_rust_project(case):
 
 
 def test_multi_file_project_inventory():
-    assert len(PROJECTS) >= 20
+    assert len(PROJECTS) >= 30
     assert len({case["name"] for case in PROJECTS}) == len(PROJECTS)
     folders = {p.name for p in ROOT.iterdir() if p.is_dir()}
     assert folders == {case["name"] for case in PROJECTS}

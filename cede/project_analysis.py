@@ -25,6 +25,10 @@ class ProjectLinker:
         for path, tree in trees.items():
             relative = path.relative_to(self.root).with_suffix("")
             segments = relative.parts
+            # In Cargo packages, module paths start at the source root,
+            # not the filesystem's `src` directory.
+            if segments and segments[0] == "src":
+                segments = segments[1:]
             if segments[-1] in ("main", "lib"):
                 segments = segments[:-1]
             elif segments[-1] == "mod":
