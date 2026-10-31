@@ -1,0 +1,912 @@
+{
+  "schema_version": 1,
+  "description": "Human-labeled, isolated Rust syntax fixtures for CEDE regression. These labels are expectations, not real-world security ground truth.",
+  "cases": [
+    {
+      "path": "rust_corpus/safe/literal_direct_01.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_02.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_03.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_04.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_05.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_06.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_07.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_08.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_09.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_10.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_11.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/literal_direct_12.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "fixed executable and literal argument"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_01.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_02.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_03.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_04.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_05.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_06.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_07.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_08.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_09.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_10.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_11.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/not_an_execution_12.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "comments and harmless shell-like strings"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_01.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_02.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_03.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_04.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_05.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_06.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_07.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/safe/fixed_variables_08.rs",
+      "expected": "None",
+      "category": "safe",
+      "topic": "literal-only flow or overwrite after use"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_01.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_01.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_02.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_02.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_03.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_03.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_04.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_04.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_05.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_05.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_06.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_06.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_arg_07.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell with only fixed script"
+    },
+    {
+      "path": "rust_corpus/advisory/static_shell_args_07.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "shell args array with fixed script"
+    },
+    {
+      "path": "rust_corpus/high/user_1_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_1_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_1_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_1_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_1_sink_5.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_2_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_2_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_2_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_2_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_2_sink_5.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_3_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_3_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_3_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_3_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_3_sink_5.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_4_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_4_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_4_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_4_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/high/user_4_sink_5.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "untrusted user input to process execution"
+    },
+    {
+      "path": "rust_corpus/medium/env_1_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_1_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_1_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_1_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_2_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_2_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_2_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_2_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_3_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_3_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_3_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_3_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_4_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_4_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_4_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/env_4_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "environment value passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_1_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_1_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_1_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_1_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_2_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_2_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_2_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_2_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_3_sink_1.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_3_sink_2.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_3_sink_3.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/medium/file_3_sink_4.rs",
+      "expected": "Medium",
+      "category": "medium",
+      "topic": "file contents passed to a fixed executable"
+    },
+    {
+      "path": "rust_corpus/high/network_1_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_1_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_1_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_1_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_2_sink_1.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_2_sink_2.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_2_sink_3.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/high/network_2_sink_4.rs",
+      "expected": "High",
+      "category": "high",
+      "topic": "network-derived data reaches a command (illustrative reqwest dependency)"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_1_1.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_1_2.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_2_1.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_2_2.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_3_1.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_3_2.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_4_1.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_4_2.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_5_1.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/configured_sanitizer_5_2.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "configured external sanitizer requires manual verification"
+    },
+    {
+      "path": "rust_corpus/advisory/local_alphanumeric_filter_plain.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "recognized local alphanumeric filter"
+    },
+    {
+      "path": "rust_corpus/advisory/local_alphanumeric_filter_shell.rs",
+      "expected": "Low",
+      "category": "advisory",
+      "topic": "sanitized shell execution still advisory"
+    },
+    {
+      "path": "rust_corpus/flow/before_assignment_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/after_assignment_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/before_env_medium.rs",
+      "expected": "Medium",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/after_env_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/overwrite_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/format_positional_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/format_inline_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/if_may_taint_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/if_overwrite_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/inner_shadow_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/push_str_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/late_builder_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/late_builder_none.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/shell_env_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/dynamic_program_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "ordering, branching, aliases and data flow"
+    },
+    {
+      "path": "rust_corpus/flow/alias_command_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/safe_local_param.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/unsafe_local_param.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/unsafe_local_return.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/safe_local_return.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/fake_sanitizer_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/identity_high.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/static_shell_command_low.rs",
+      "expected": "Low",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/safe_using_literal_arrays.rs",
+      "expected": "None",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/flow/unsafe_shell_arg_array.rs",
+      "expected": "High",
+      "category": "flow",
+      "topic": "functions and command builder variants"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_01.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_02.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_03.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_04.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_05.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_06.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_07.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_08.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_09.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_10.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_11.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    },
+    {
+      "path": "rust_corpus/invalid/parse_error_12.rs",
+      "expected": "ParseError",
+      "category": "invalid",
+      "topic": "intentionally malformed Rust syntax"
+    }
+  ]
+}
