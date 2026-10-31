@@ -1,7 +1,15 @@
 """Exercise the real Tkinter window under Xvfb in GitHub Actions."""
+import os
+import sys
 import threading
 import time
 import tkinter as tk
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.platform.startswith("linux") and not os.environ.get("DISPLAY"),
+    reason="GUI integration requires Xvfb or a graphical display",
+)
 
 from cede.gui import MainWindow
 from cede.models import VulnerabilityReport
