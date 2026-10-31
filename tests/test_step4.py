@@ -504,3 +504,30 @@ def test_args_array_static_shell_is_low():
     assert sev(
         'fn f(){ Command::new("sh").args(["-c", "echo hello"]).spawn().unwrap(); }'
     ) == S.LOW
+
+
+def test_builder_argument_after_execution_is_ignored():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c");
+        cmd.arg("echo safe");
+        cmd.spawn().unwrap();
+        let later = std::env::args().nth(1).unwrap();
+        cmd.arg(later);
+    }
+    """
+    assert sev(src) == S.LOW
+
+
+def test_builder_arguments_before_execution_are_included():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        let input = std::env::args().nth(1).unwrap();
+        cmd.arg("-c");
+        cmd.arg(input);
+        cmd.spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH

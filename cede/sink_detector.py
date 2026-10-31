@@ -140,8 +140,8 @@ class SinkDetector:
 
         args, methods, sites = [], [], []
 
-        for call in tree.calls_in(fn_node):
-            # A command variable cannot be used before it is declared.
+        for call in sorted(tree.calls_in(fn_node), key=lambda n: n.start_byte):
+            # A later .arg() cannot change a command that has already run.
             if call.start_byte <= chain_end.end_byte:
                 continue
             f = call.child_by_field_name("function")
@@ -166,6 +166,8 @@ class SinkDetector:
                 continue
 
             methods.append(name)
+            if name in self.rules.spawn_methods:
+                break
 
             if name in ("arg", "args"):
                 a = call.child_by_field_name("arguments")
