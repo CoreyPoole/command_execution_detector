@@ -37,12 +37,15 @@ class TaintAnalyzer:
         self._defs_cache: dict = {}
         # function name defined in this file -> True only for a verified allow-list sanitizer
         self._local_fns: dict[str, bool] = {}
+        self._function_nodes: dict = {}
+        self._callsites: dict = {}
 
     # -- public API ---------------------------------------------------------
     def trace(self, tree: SyntaxTree, sinks: list[Sink]) -> list[TaintPath]:
         # Never carry syntax nodes/definitions from one source tree to another.
         self._defs_cache.clear()
         self._local_fns = self._collect_local_fns(tree, sinks)
+        self._index_local_calls(tree)
         return [self._trace_sink(tree, s) for s in sinks]
 
     def _collect_local_fns(self, tree: SyntaxTree, sinks: list[Sink]) -> dict[str, bool]:
@@ -86,6 +89,76 @@ class TaintAnalyzer:
         return bool(
             match and re.search(r"\b" + re.escape(match["src"]) + r"\s*:", tree.text(params))
         )
+
+    # -- local function parameter propagation -------------------------------
+    def _index_local_calls(self, tree: SyntaxTree) -> None:
+        """Index direct local calls only; do not guess the target of methods."""
+        groups = {}
+        for fn in tree.functions():
+            name = fn.child_by_field_name("name")
+            if name is not None:
+                groups.setdefault(tree.text(name), []).append(fn)
+        # Duplicate names across modules cannot safely be resolved here.
+        self._function_nodes = {name: nodes[0] for name, nodes in groups.items()
+                                if len(nodes) == 1}
+        self._callsites = {name: [] for name in self._function_nodes}
+        for call in tree.walk():
+            if call.type == "call_expression":
+                fn = call.child_by_field_name("function")
+                if fn is not None and fn.type == "identifier":
+                    name = tree.text(fn)
+                    if name in self._callsites:
+                        self._callsites[name].append(call)
+
+    @staticmethod
+    def _enclosing_function(node):
+        while node is not None:
+            if node.type == "function_item":
+                return node
+            node = node.parent
+        return None
+
+    @staticmethod
+    def _parameter_names(tree, fn):
+        params = fn.child_by_field_name("parameters")
+        if params is None:
+            return []
+        names = []
+        for p in params.named_children:
+            if p.type != "parameter":
+                continue
+            pattern = p.child_by_field_name("pattern")
+            if pattern is None:
+                pattern = next((n for n in p.named_children
+                                if n.type == "identifier"), None)
+            names.append(tree.text(pattern) if pattern is not None and
+                         pattern.type == "identifier" else None)
+        return names
+
+    def _parameter_flow(self, tree, node, name, seen):
+        """Propagate values from direct same-file caller arguments into a parameter."""
+        fn = self._enclosing_function(node)
+        if fn is None:
+            return []
+        fn_name = fn.child_by_field_name("name")
+        if fn_name is None or self._function_nodes.get(tree.text(fn_name)) != fn:
+            return []
+        params = self._parameter_names(tree, fn)
+        if name not in params:
+            return []
+        index = params.index(name)
+        flows = []
+        for call in self._callsites.get(tree.text(fn_name), []):
+            args = call.child_by_field_name("arguments")
+            if args is None or len(args.named_children) <= index:
+                continue
+            caller = self._enclosing_function(call)
+            if caller is None:
+                continue
+            actual = args.named_children[index]
+            defs = self._defs(tree, caller, actual.start_byte)
+            flows += self._flow(tree, actual, defs, seen)
+        return flows
 
     # -- per sink -----------------------------------------------------------
     def _trace_sink(self, tree: SyntaxTree, sink: Sink) -> TaintPath:
@@ -141,16 +214,26 @@ class TaintAnalyzer:
             if parent is not None and parent.type == "call_expression" and parent.child_by_field_name("function") == node:
                 return out
             name = tree.text(node)
-            if name not in seen:
-                for d in defs.get(name, []):
-                    out += self._flow(tree, d, defs, seen | {name})
+            scope = self._enclosing_function(node)
+            marker = ("identifier", scope.start_byte if scope is not None else -1, name)
+            if marker not in seen:
+                if name in defs:
+                    for d in defs[name]:
+                        out += self._flow(tree, d, defs, seen | {marker})
+                else:
+                    out += self._parameter_flow(tree, node, name, seen | {marker})
             return out
 
         if t == "string_literal" and self._inside_macro(node):
             for name in _INLINE_CAPTURE.findall(tree.text(node)):
-                if name not in seen:
-                    for d in defs.get(name, []):
-                        out += self._flow(tree, d, defs, seen | {name})
+                scope = self._enclosing_function(node)
+                marker = ("identifier", scope.start_byte if scope is not None else -1, name)
+                if marker not in seen:
+                    if name in defs:
+                        for d in defs[name]:
+                            out += self._flow(tree, d, defs, seen | {marker})
+                    else:
+                        out += self._parameter_flow(tree, node, name, seen | {marker})
             return out
 
         for child in node.children:

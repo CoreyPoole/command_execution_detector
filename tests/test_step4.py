@@ -531,3 +531,42 @@ def test_builder_arguments_before_execution_are_included():
     }
     """
     assert sev(src) == S.HIGH
+
+
+# ---- Same-file direct caller propagation ---------------------------------
+
+def test_untrusted_caller_arg_flows_into_command_helper():
+    src = """
+    fn run(command: String) {
+        Command::new("sh").arg("-c").arg(command).spawn().unwrap();
+    }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        run(input);
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_safe_caller_arg_is_not_tainted():
+    src = """
+    fn run(command: String) {
+        Command::new("echo").arg(command).spawn().unwrap();
+    }
+    fn main() { run(String::from("hello")); }
+    """
+    assert findings(src) == []
+
+
+def test_nested_direct_helper_parameters_propagate():
+    src = """
+    fn execute(command: String) {
+        Command::new("sh").arg("-c").arg(command).spawn().unwrap();
+    }
+    fn pass_along(value: String) { execute(value); }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        pass_along(input);
+    }
+    """
+    assert sev(src) == S.HIGH
