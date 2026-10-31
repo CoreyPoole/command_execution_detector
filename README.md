@@ -79,3 +79,33 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
 
 These fixtures are for static analysis only, not compilation or execution.
 The labels are regression expectations, **not** independent security ground truth.
+
+## GUI Test Dashboard
+
+Open the desktop GUI with `python -m cede --gui` (or `cede-gui`),
+then click **Test Dashboard**. Select the `rust_corpus` or `rust_projects`
+folder containing a `manifest.json`, and click **Run Tests**.
+
+The dashboard compares findings against the **expected manifest labels**.
+Each Rust file in `rust_corpus` is scanned separately. Each numbered
+Rust project in `rust_projects` is likewise scanned independently, so
+other projects cannot interfere with cross-file name resolution.
+
+- **PASS**: finding severity, or the project's full findings and counts, match.
+- **FAIL**: a missing, extra or different finding; unexpected parse error;
+  file error; or incorrect scanned-file count.
+- **SKIP**: the manifest *expects* an invalid Rust sample and it produces
+  a parse error. These are intentional, not incomplete scans.
+
+The window shows progress, totals, a filter for failures only, individual
+expected/observed outcomes and details, and a Cancel button. It leaves
+the normal scan-results window untouched. All Rust samples are analyzed
+as source text and never executed.
+
+Run `python -m pytest tests/test_testing_dashboard.py -q` to test the
+comparison logic; the existing GUI integration workflow also exercises
+the dashboard using a virtual display.
+
+**These labels are curated regression expectations, not independent
+evidence of real-world vulnerability detection accuracy.** Suite folders
+are in the repository checkout and are not bundled with pip wheels.
