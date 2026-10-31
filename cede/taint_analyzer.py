@@ -371,6 +371,22 @@ class TaintAnalyzer:
                             # A branch/loop may not execute, so merge the
                             # incoming and assigned paths conservatively.
                             add(name, right)
+            elif t == "match_arm":
+                # A pattern such as Ok(value) binds the matched expression.
+                # This overapproximates variants rather than proving a path.
+                pat = n.child_by_field_name("pattern")
+                if pat is None and n.named_children:
+                    pat = n.named_children[0]
+                matched = n.parent
+                while matched is not None and matched.type != "match_expression":
+                    matched = matched.parent
+                if pat is not None and matched is not None and matched.named_children:
+                    subject = matched.named_children[0]
+                    for identifier in tree.walk(pat):
+                        if identifier.type == "identifier":
+                            name = tree.text(identifier)
+                            if name and (name[0].islower() or name[0] == "_"):
+                                add(name, subject)
             elif t == "for_expression":
                 pat, val = n.child_by_field_name("pattern"), n.child_by_field_name("value")
                 if pat is not None and val is not None:
