@@ -620,3 +620,36 @@ def test_helper_returning_local_variable_keeps_taint():
     }
     """
     assert sev(src) == S.HIGH
+
+
+def test_reused_command_builder_reports_each_execution():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c");
+        cmd.arg("echo okay");
+        cmd.spawn().unwrap();
+        let later = std::env::args().nth(1).unwrap();
+        cmd.arg(later);
+        cmd.spawn().unwrap();
+    }
+    """
+    result = findings(src)
+    assert len(result) == 2
+    assert [f.severity for f in result] == [S.HIGH, S.LOW]
+
+
+def test_reused_command_builder_does_not_confuse_first_execution():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("echo");
+        cmd.arg("safe");
+        cmd.spawn().unwrap();
+        let later = std::env::var("AFTER").unwrap();
+        cmd.arg(later);
+        cmd.spawn().unwrap();
+    }
+    """
+    result = findings(src)
+    assert len(result) == 1
+    assert result[0].severity == S.MEDIUM

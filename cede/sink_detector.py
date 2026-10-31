@@ -28,7 +28,7 @@ class SinkDetector:
         for fn in tree.functions():
             for call in tree.calls_in(fn):
                 if self._is_command_new(tree, call, aliases):
-                    sinks.append(self._build_sink(tree, call, fn))
+                    sinks.extend(self._build_sinks(tree, call, fn))
 
         # Do not independently report arbitrary shell-like strings.
         # Shell execution is identified through actual Command::new calls.
@@ -61,7 +61,7 @@ class SinkDetector:
             or any(text == alias + "::new" for alias in aliases)
         )
 
-    def _build_sink(self, tree, call, fn_node) -> Sink:
+    def _build_sinks(self, tree, call, fn_node) -> list[Sink]:
         args = call.child_by_field_name("arguments")
         program = (
             args.named_children[0]
@@ -109,76 +109,69 @@ class SinkDetector:
 
             node = outer
 
-        # Track calls made through a stored command variable.
-        extra_args, extra_methods, extra_sites = self._linked_variable_calls(
-            tree, last, fn_node
-        )
+        # Stored builders can execute more than once. Capture a separate
+        # snapshot at every spawn/output/status so later arguments do not
+        # retroactively change an earlier command.
+        snapshots = self._linked_variable_snapshots(tree, last, fn_node)
+        if not snapshots:
+            snapshots = [([], [], [], None)]
+        results = []
+        for index, (extra_args, extra_methods, extra_sites, execution) in enumerate(snapshots):
+            all_args = arg_nodes + extra_args
+            results.append(Sink(
+                line=(execution.start_point[0] + 1 if execution is not None
+                      and index > 0 else call.start_point[0] + 1),
+                api=" ".join(tree.text(last).split()),
+                is_shell_invocation=self._is_shell(tree, program, all_args),
+                node=last,
+                program_node=program,
+                arg_nodes=all_args,
+                arg_sites=arg_sites + extra_sites,
+                methods=methods + extra_methods,
+                function_node=fn_node,
+            ))
+        return results
 
-        arg_nodes += extra_args
-        methods += extra_methods
-        arg_sites += extra_sites
-
-        return Sink(
-            line=call.start_point[0] + 1,
-            api=" ".join(tree.text(last).split()),
-            is_shell_invocation=self._is_shell(
-                tree, program, arg_nodes
-            ),
-            node=last,
-            program_node=program,
-            arg_nodes=arg_nodes,
-            arg_sites=arg_sites,
-            methods=methods,
-            function_node=fn_node,
-        )
-
-    def _linked_variable_calls(self, tree, chain_end, fn_node):
+    def _linked_variable_snapshots(self, tree, chain_end, fn_node):
         var = self._bound_name(tree, chain_end)
-
         if var is None:
-            return [], [], []
+            return []
 
-        args, methods, sites = [], [], []
-
+        args, methods, sites, snapshots = [], [], [], []
         for call in sorted(tree.calls_in(fn_node), key=lambda n: n.start_byte):
-            # A later .arg() cannot change a command that has already run.
             if call.start_byte <= chain_end.end_byte:
                 continue
             f = call.child_by_field_name("function")
-
             if f is None or f.type != "field_expression":
                 continue
-
             target = f.child_by_field_name("value")
-
-            if (
-                target is None
-                or target.type != "identifier"
-                or tree.text(target) != var
-            ):
+            if (target is None or target.type != "identifier"
+                    or tree.text(target) != var):
                 continue
-
-            name = tree.text(
-                f.child_by_field_name("field")
-            )
-
+            field = f.child_by_field_name("field")
+            if field is None:
+                continue
+            name = tree.text(field)
             if name not in _CHAIN_METHODS:
                 continue
-
             methods.append(name)
-            if name in self.rules.spawn_methods:
-                break
-
             if name in ("arg", "args"):
-                a = call.child_by_field_name("arguments")
-                if a is not None:
-                    for expr in a.named_children:
-                        values = self._expand_args(expr) if name == "args" else [expr]
+                arguments = call.child_by_field_name("arguments")
+                if arguments is not None:
+                    for expression in arguments.named_children:
+                        values = (self._expand_args(expression) if name == "args"
+                                  else [expression])
                         for value in values:
                             args.append(value)
                             sites.append((value, value.start_byte))
+            if name in self.rules.spawn_methods:
+                snapshots.append((list(args), list(methods), list(sites), call))
 
-        return args, methods, sites
+        if not snapshots:
+            # Preserve the initial behavior of reporting suspicious builders
+            # even when execution is not visible in the current function.
+            return [(args, methods, sites, None)]
+        return snapshots
 
     @staticmethod
     def _expand_args(expr):
