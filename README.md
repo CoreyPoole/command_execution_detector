@@ -57,3 +57,13 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
   unambiguous; macros, traits, wildcard imports, and reexports are not.
 - GUI supports one scan at a time, progress and cancellation between files,
   plus source context for findings.
+
+## Desktop builds (experimental)
+- The `Build desktop applications` GitHub Actions workflow packages the Tkinter
+  GUI for Linux, Windows, and macOS using PyInstaller. Build artifacts are
+  attached to each workflow run under Actions, not uploaded to PyPI.
+- Builds are unsigned, have not been manually tested on physical machines,
+  and might display platform warnings. An installed Python wheel and local
+  Tkinter environment remain the most reliable starting point.
+- Create a release after validation by pushing a semantic `v*` Git tag.
+  The release workflow publishes wheel and source-distribution assets.
