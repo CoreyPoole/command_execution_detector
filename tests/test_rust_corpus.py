@@ -37,7 +37,7 @@ def test_corpus_inventory_and_distribution():
     names = [case["path"] for case in CASES]
     assert len(names) == len(set(names))
     tracked = {
-        str(path.relative_to(ROOT.parent))
+        path.relative_to(ROOT.parent).as_posix()
         for path in ROOT.rglob("*.rs")
     }
     assert tracked == set(names), "Every .rs fixture must be labeled in manifest.json"
