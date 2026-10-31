@@ -48,7 +48,8 @@ class ScanController:
         self._sort(report)
         return report
 
-    def scan_project(self, root: Path, progress: Callable[[int, int, Path], None] | None = None) -> VulnerabilityReport:
+    def scan_project(self, root: Path, progress: Callable[[int, int, Path], None] | None = None,
+                     cancel: Callable[[], bool] | None = None) -> VulnerabilityReport:
         """Scan every .rs file under root. Files with syntax errors are skipped and recorded."""
         root = Path(root)
         files = self.scanner.discover_rs_files(root)
@@ -56,6 +57,8 @@ class ScanController:
         trees = {}
         # Parse once, then resolve unambiguous module calls across files.
         for f in files:
+            if cancel is not None and cancel():
+                return report
             try:
                 trees[f] = self.parser.parse(self.scanner.read_file(f), f)
             except ParseError as exc:
@@ -64,6 +67,8 @@ class ScanController:
             root if root.is_dir() else root.parent, trees, self.rules
         ).resolve()
         for i, f in enumerate(files, 1):
+            if cancel is not None and cancel():
+                break
             if f in trees:
                 report.merge(self._scan_tree(
                     f, trees[f], params.get(f), returns.get(f)
