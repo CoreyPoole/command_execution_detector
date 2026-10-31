@@ -7,8 +7,8 @@ import tkinter as tk
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    sys.platform.startswith("linux") and not os.environ.get("DISPLAY"),
-    reason="GUI integration requires Xvfb or a graphical display",
+    not (sys.platform.startswith("linux") and os.environ.get("DISPLAY")),
+    reason="Live GUI tests run in the dedicated Linux Xvfb job",
 )
 
 from cede.gui import MainWindow
