@@ -1,0 +1,72 @@
+[
+  {
+    "file": "safe_literal.rs",
+    "expected_severity": null,
+    "actionable": false
+  },
+  {
+    "file": "safe_comment.rs",
+    "expected_severity": null,
+    "actionable": false
+  },
+  {
+    "file": "unsafe_stdin_shell.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "unsafe_env_program.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "unsafe_file_argument.rs",
+    "expected_severity": "Medium",
+    "actionable": true
+  },
+  {
+    "file": "unsafe_network_argument.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "unsafe_if_branch.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "safe_overwrite.rs",
+    "expected_severity": null,
+    "actionable": false
+  },
+  {
+    "file": "safe_shadowed.rs",
+    "expected_severity": null,
+    "actionable": false
+  },
+  {
+    "file": "unsafe_alias.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "advisory_static_shell.rs",
+    "expected_severity": "Low",
+    "actionable": false
+  },
+  {
+    "file": "safe_local_filter.rs",
+    "expected_severity": "Low",
+    "actionable": false
+  },
+  {
+    "file": "unsafe_passthrough.rs",
+    "expected_severity": "High",
+    "actionable": true
+  },
+  {
+    "file": "unsafe_helper.rs",
+    "expected_severity": "High",
+    "actionable": true
+  }
+]
