@@ -421,3 +421,59 @@ def test_local_identity_wrapper_is_not_a_sanitizer():
         '    Command::new("ls").arg(dir).output().unwrap();\n'
         '}\n'
     ) == S.HIGH
+
+# ---- Temporal builder state and sanitizer verification -------------------
+
+def test_builder_argument_introduced_after_constructor_is_tainted():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        let input = std::env::args().nth(1).unwrap();
+        cmd.arg("-c");
+        cmd.arg(input);
+        cmd.spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_builder_argument_assignments_after_use_are_not_retroactive():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("echo");
+        let mut input = String::from("safe");
+        cmd.arg(&input);
+        input = std::env::var("LATER").unwrap();
+        cmd.spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
+
+
+def test_local_logger_is_not_a_sanitizer():
+    src = """
+    fn sanitize(s: String) -> String {
+        println!("Checking input");
+        s
+    }
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        let result = sanitize(input);
+        Command::new("sh").arg("-c").arg(result).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_local_branching_noop_is_not_a_sanitizer():
+    src = """
+    fn validate(s: String) -> String {
+        if s.len() > 0 { return s; }
+        s
+    }
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(validate(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH

@@ -25,7 +25,6 @@ _IDENTITY_CALLS = {
     "unwrap", "expect", "chars", "bytes", "as_bytes", "iter", "into_iter", "collect", "to_vec",
 }
 # Control flow that suggests the body checks or branches on its input.
-_CHECK_NODES = {"if_expression", "match_expression", "while_expression", "macro_invocation"}
 
 
 class TaintAnalyzer:
@@ -36,7 +35,7 @@ class TaintAnalyzer:
             for k, v in self.rules.sources.items()
         ]
         self._defs_cache: dict = {}
-        # function name defined in the scanned file -> True if its body does real work
+        # function name defined in this file -> True only for a verified allow-list sanitizer
         self._local_fns: dict[str, bool] = {}
 
     # -- public API ---------------------------------------------------------
@@ -59,38 +58,52 @@ class TaintAnalyzer:
             if n.type == "function_item":
                 name = n.child_by_field_name("name")
                 if name is not None:
-                    result[tree.text(name)] = self._body_does_work(tree, n)
+                    result[tree.text(name)] = self._body_sanitizes(tree, n)
         return result
 
     @staticmethod
-    def _body_does_work(tree: SyntaxTree, fn_item) -> bool:
-        """False for passthrough bodies (return the input, or only identity-style calls)."""
+    def _body_sanitizes(tree: SyntaxTree, fn_item) -> bool:
+        """Recognize only the narrow, inspectable alphanumeric filter used by our sample.
+
+        An arbitrary branch, log statement, or function call is NOT proof of
+        sanitization. Unknown local helpers fail closed (remain unsanitized).
+        """
         body = fn_item.child_by_field_name("body")
-        if body is None:
+        params = fn_item.child_by_field_name("parameters")
+        if body is None or params is None:
             return False
-        for n in tree.walk(body):
-            if n.type in _CHECK_NODES:
-                return True
-            if n.type == "call_expression":
-                f = n.child_by_field_name("function")
-                last = _PATH_SPLIT.split(tree.text(f))[-1] if f is not None else ""
-                if last not in _IDENTITY_CALLS:
-                    return True
-        return False
+        body_text = tree.text(body).strip()
+        if not (body_text.startswith("{") and body_text.endswith("}")):
+            return False
+        expr = re.sub(r"\s+", "", body_text[1:-1])
+        match = re.fullmatch(
+            r"(?P<src>[A-Za-z_]\w*)\.chars\(\)"
+            r"\.filter\(\|(?P<item>[A-Za-z_]\w*)\|"
+            r"(?P=item)\.is_(?:ascii_)?alphanumeric\(\)\)"
+            r"\.collect\(\);?",
+            expr,
+        )
+        return bool(
+            match and re.search(r"\b" + re.escape(match["src"]) + r"\s*:", tree.text(params))
+        )
 
     # -- per sink -----------------------------------------------------------
     def _trace_sink(self, tree: SyntaxTree, sink: Sink) -> TaintPath:
         if sink.function_node is None:                       # bare "sh -c" string
             return TaintPath(None, sink, sanitized=False, reachable=False)
-        # Only include definitions that precede this command call.
-        defs = self._defs(tree, sink.function_node, sink.node.start_byte)
-        exprs = ([sink.program_node] if sink.program_node is not None else []) + list(sink.arg_nodes)
+        # Trace each argument at its own source position, not at Command::new.
+        # Builder variables may receive arguments long after construction.
         flows: list[tuple[SourceKind, bool]] = []
-        for e in exprs:
-            flows += self._flow(tree, e, defs, frozenset())
         program_tainted = False
         if sink.program_node is not None:
-            program_tainted = any(not s for _, s in self._flow(tree, sink.program_node, defs, frozenset()))
+            program_defs = self._defs(tree, sink.function_node, sink.program_node.start_byte)
+            program_flows = self._flow(tree, sink.program_node, program_defs, frozenset())
+            flows += program_flows
+            program_tainted = any(not sanitized for _, sanitized in program_flows)
+        sites = sink.arg_sites or [(arg, arg.start_byte) for arg in sink.arg_nodes]
+        for arg, position in sites:
+            defs = self._defs(tree, sink.function_node, position)
+            flows += self._flow(tree, arg, defs, frozenset())
         unsanitized = [k for k, s in flows if not s]
         sanitized = [k for k, s in flows if s]
         if unsanitized:

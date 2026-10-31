@@ -56,7 +56,7 @@ class SinkDetector:
             else None
         )
 
-        node, last, methods, arg_nodes = call, call, [], []
+        node, last, methods, arg_nodes, arg_sites = call, call, [], [], []
 
         while True:
             parent = node.parent
@@ -85,7 +85,9 @@ class SinkDetector:
             if name in ("arg", "args"):
                 a = outer.child_by_field_name("arguments")
                 if a is not None:
-                    arg_nodes += list(a.named_children)
+                    for expr in a.named_children:
+                        arg_nodes.append(expr)
+                        arg_sites.append((expr, expr.start_byte))
 
             if name in _CHAIN_METHODS:
                 last = outer
@@ -93,12 +95,13 @@ class SinkDetector:
             node = outer
 
         # Track calls made through a stored command variable.
-        extra_args, extra_methods = self._linked_variable_calls(
+        extra_args, extra_methods, extra_sites = self._linked_variable_calls(
             tree, last, fn_node
         )
 
         arg_nodes += extra_args
         methods += extra_methods
+        arg_sites += extra_sites
 
         return Sink(
             line=call.start_point[0] + 1,
@@ -109,6 +112,7 @@ class SinkDetector:
             node=last,
             program_node=program,
             arg_nodes=arg_nodes,
+            arg_sites=arg_sites,
             methods=methods,
             function_node=fn_node,
         )
@@ -117,11 +121,14 @@ class SinkDetector:
         var = self._bound_name(tree, chain_end)
 
         if var is None:
-            return [], []
+            return [], [], []
 
-        args, methods = [], []
+        args, methods, sites = [], [], []
 
         for call in tree.calls_in(fn_node):
+            # A command variable cannot be used before it is declared.
+            if call.start_byte <= chain_end.end_byte:
+                continue
             f = call.child_by_field_name("function")
 
             if f is None or f.type != "field_expression":
@@ -148,9 +155,11 @@ class SinkDetector:
             if name in ("arg", "args"):
                 a = call.child_by_field_name("arguments")
                 if a is not None:
-                    args += list(a.named_children)
+                    for expr in a.named_children:
+                        args.append(expr)
+                        sites.append((expr, expr.start_byte))
 
-        return args, methods
+        return args, methods, sites
 
     @staticmethod
     def _bound_name(tree, chain_end) -> str | None:
