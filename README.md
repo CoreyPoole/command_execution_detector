@@ -41,3 +41,19 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
 - Simple `use std::process::Command as Cmd` aliases are recognized; more complex import resolution is not supported.
 - Command builders stored in local variables are tracked across simple method calls and repeated executions. Full Rust ownership, aliasing, and conditional execution semantics are not modeled.
 - The analyzer is intentionally heuristic; evaluate findings and potential false negatives manually.
+
+## Development and installation (v0.2)
+- Use Python 3.11 or newer and run `python -m pip install -e ".[dev]"`.
+- CLI: `cede samples`; desktop GUI: `cede-gui` (requires Tkinter).
+- Benchmark: `python -m cede.benchmark` reports precision and recall on a
+  small synthetic security regression corpus, not real-world accuracy.
+- Build wheel and source distribution with `python -m build`.
+- CI tests run on Windows, macOS, and Linux.
+
+## Additional v0.2 analysis limits
+- Conditional assignments and shadowing are handled conservatively; this is
+  not a Rust control-flow graph or Rust borrow checker.
+- Explicit module-qualified or imported same-project calls are resolved when
+  unambiguous; macros, traits, wildcard imports, and reexports are not.
+- GUI supports one scan at a time, progress and cancellation between files,
+  plus source context for findings.
