@@ -67,3 +67,15 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
   Tkinter environment remain the most reliable starting point.
 - Create a release after validation by pushing a semantic `v*` Git tag.
   The release workflow publishes wheel and source-distribution assets.
+
+## Large Rust regression sets
+
+- `rust_corpus/` contains 151 labeled single-file Rust cases: safe, High,
+  Medium, Low, flow, and invalid-syntax cases.
+- `rust_projects/` contains 30 labeled multi-file projects, including
+  conventional Cargo `src/` layouts and nested modules.
+- Run `python -m pytest tests/test_rust_corpus.py tests/test_rust_projects.py -q`
+  to test them individually, or `python -m pytest tests -q` for everything.
+
+These fixtures are for static analysis only, not compilation or execution.
+The labels are regression expectations, **not** independent security ground truth.

@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "description": "Labeled, minimal multi-file module projects for cross-file CEDE regression. Not end-to-end Cargo compilation tests.",
+  "projects": [
+    {
+      "name": "01_user_shell",
+      "directory": "rust_projects/01_user_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "User input passed across a Rust module boundary into a shell"
+    },
+    {
+      "name": "02_user_plain",
+      "directory": "rust_projects/02_user_plain",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "User input passed to fixed executable across files"
+    },
+    {
+      "name": "03_env_plain",
+      "directory": "rust_projects/03_env_plain",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Environment variable passed as argument"
+    },
+    {
+      "name": "04_env_shell",
+      "directory": "rust_projects/04_env_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Environment variable into shell execution"
+    },
+    {
+      "name": "05_file_plain",
+      "directory": "rust_projects/05_file_plain",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "File contents into a fixed command argument"
+    },
+    {
+      "name": "06_file_dynamic_program",
+      "directory": "rust_projects/06_file_dynamic_program",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "File data controls program selection"
+    },
+    {
+      "name": "07_network_plain",
+      "directory": "rust_projects/07_network_plain",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Network data through another module"
+    },
+    {
+      "name": "08_literal_plain",
+      "directory": "rust_projects/08_literal_plain",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Safe literal passed to a command via helper"
+    },
+    {
+      "name": "09_literal_shell",
+      "directory": "rust_projects/09_literal_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "Low"
+        }
+      ],
+      "description": "Static shell invocation across modules"
+    },
+    {
+      "name": "10_return_env_program",
+      "directory": "rust_projects/10_return_env_program",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "main.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Dynamic executable returned from another file"
+    },
+    {
+      "name": "11_return_env_arg",
+      "directory": "rust_projects/11_return_env_arg",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "main.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Untrusted argument produced by another file"
+    },
+    {
+      "name": "12_return_safe",
+      "directory": "rust_projects/12_return_safe",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Safe literal returned from another module"
+    },
+    {
+      "name": "13_explicit_use_user",
+      "directory": "rust_projects/13_explicit_use_user",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Explicit imported helper in same project"
+    },
+    {
+      "name": "14_nested_path",
+      "directory": "rust_projects/14_nested_path",
+      "files_scanned": 3,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "tools/runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Nested modules with explicit qualified path"
+    },
+    {
+      "name": "15_distinct_module_names",
+      "directory": "rust_projects/15_distinct_module_names",
+      "files_scanned": 3,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Do not confuse duplicate helper names in separate modules"
+    },
+    {
+      "name": "16_two_severities",
+      "directory": "rust_projects/16_two_severities",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        },
+        {
+          "file": "runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Two distinct findings across same module"
+    },
+    {
+      "name": "17_three_file_chain",
+      "directory": "rust_projects/17_three_file_chain",
+      "files_scanned": 3,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Transitive taint through two separate modules"
+    },
+    {
+      "name": "18_input_overwritten_safe",
+      "directory": "rust_projects/18_input_overwritten_safe",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Overwritten input before crossing file boundary"
+    },
+    {
+      "name": "19_unused_source",
+      "directory": "rust_projects/19_unused_source",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Unrelated taint source must not propagate"
+    },
+    {
+      "name": "20_static_shell_in_helper",
+      "directory": "rust_projects/20_static_shell_in_helper",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "runner.rs",
+          "severity": "Low"
+        }
+      ],
+      "description": "Static Windows shell in helper"
+    },
+    {
+      "name": "21_cargo_user_shell",
+      "directory": "rust_projects/21_cargo_user_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Standard Cargo src layout with user input to shell"
+    },
+    {
+      "name": "22_cargo_safe_arg",
+      "directory": "rust_projects/22_cargo_safe_arg",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Standard Cargo src layout with fixed argument"
+    },
+    {
+      "name": "23_cargo_nested_module",
+      "directory": "rust_projects/23_cargo_nested_module",
+      "files_scanned": 3,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/tools/runner.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Nested Cargo source modules and qualified calls"
+    },
+    {
+      "name": "24_cargo_explicit_import",
+      "directory": "rust_projects/24_cargo_explicit_import",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Imported helper across standard src files"
+    },
+    {
+      "name": "25_cargo_return_literal",
+      "directory": "rust_projects/25_cargo_return_literal",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Safe return from Cargo module"
+    },
+    {
+      "name": "26_cargo_return_env_program",
+      "directory": "rust_projects/26_cargo_return_env_program",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/main.rs",
+          "severity": "High"
+        }
+      ],
+      "description": "Env var selects executable through a Cargo module return"
+    },
+    {
+      "name": "27_cargo_two_findings",
+      "directory": "rust_projects/27_cargo_two_findings",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "High"
+        },
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "Multiple severities in src module"
+    },
+    {
+      "name": "28_cargo_file_arg",
+      "directory": "rust_projects/28_cargo_file_arg",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Medium"
+        }
+      ],
+      "description": "File source propagated through Cargo module"
+    },
+    {
+      "name": "29_cargo_unused_source",
+      "directory": "rust_projects/29_cargo_unused_source",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [],
+      "description": "Ignore unconnected untrusted source"
+    },
+    {
+      "name": "30_cargo_static_shell",
+      "directory": "rust_projects/30_cargo_static_shell",
+      "files_scanned": 2,
+      "parse_errors": 0,
+      "findings": [
+        {
+          "file": "src/runner.rs",
+          "severity": "Low"
+        }
+      ],
+      "description": "Static shell in Cargo package"
+    }
+  ]
+}
