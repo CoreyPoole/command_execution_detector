@@ -135,11 +135,15 @@ class TaintAnalyzer:
                          pattern.type == "identifier" else None)
         return names
 
-    def _parameter_flow(self, tree, node, name, seen):
+    def _parameter_flow(self, tree, node, name, seen, bindings=None):
         """Propagate values from direct same-file caller arguments into a parameter."""
         fn = self._enclosing_function(node)
         if fn is None:
             return []
+        key = (fn.start_byte, name)
+        if bindings is not None and key in bindings:
+            actual, caller_defs, caller_bindings = bindings[key]
+            return self._flow(tree, actual, caller_defs, seen, caller_bindings)
         fn_name = fn.child_by_field_name("name")
         if fn_name is None or self._function_nodes.get(tree.text(fn_name)) != fn:
             return []
@@ -158,6 +162,39 @@ class TaintAnalyzer:
             actual = args.named_children[index]
             defs = self._defs(tree, caller, actual.start_byte)
             flows += self._flow(tree, actual, defs, seen)
+        return flows
+
+    def _local_return_flow(self, tree, call, local_fn, seen, parent_defs, parent_bindings):
+        """Follow simple return expressions through a direct same-file call.
+
+        Return values from branches are conservatively combined. Only unique
+        direct function names are resolved; imports and traits are not.
+        """
+        marker = ("return", local_fn.start_byte)
+        if marker in seen:
+            return []
+        args = call.child_by_field_name("arguments")
+        body = local_fn.child_by_field_name("body")
+        if args is None or body is None:
+            return []
+        bindings = dict(parent_bindings or {})
+        for name, actual in zip(self._parameter_names(tree, local_fn), args.named_children):
+            if name is not None:
+                bindings[(local_fn.start_byte, name)] = (
+                    actual, parent_defs, parent_bindings
+                )
+        expressions = []
+        for node in tree.walk(body):
+            if node.type == "return_expression":
+                expressions.extend(node.named_children)
+        if body.named_children:
+            last = body.named_children[-1]
+            if last.type not in ("expression_statement", "let_declaration", "return_expression"):
+                expressions.append(last)
+        flows = []
+        for expr in expressions:
+            inner_defs = self._defs(tree, local_fn, expr.start_byte)
+            flows += self._flow(tree, expr, inner_defs, seen | {marker}, bindings)
         return flows
 
     # -- per sink -----------------------------------------------------------
@@ -190,18 +227,23 @@ class TaintAnalyzer:
         return min(kinds, key=_PRIORITY.index)
 
     # -- expression flow ----------------------------------------------------
-    def _flow(self, tree, node, defs, seen):
+    def _flow(self, tree, node, defs, seen, bindings=None):
         out: list[tuple[SourceKind, bool]] = []
         t = node.type
 
         if t == "call_expression":
             fn = node.child_by_field_name("function")
             fn_text = tree.text(fn) if fn is not None else ""
-            inner: list[tuple[SourceKind, bool]] = []
-            for kind in self._sources_in(fn_text):
-                inner.append((kind, False))
+            sources = [(kind, False) for kind in self._sources_in(fn_text)]
+            local_fn = (self._function_nodes.get(fn_text)
+                        if fn is not None and fn.type == "identifier" else None)
+            if local_fn is not None and not self._is_sanitizer(fn_text):
+                return sources + self._local_return_flow(
+                    tree, node, local_fn, seen, defs, bindings
+                )
+            inner = list(sources)
             for child in node.children:
-                inner += self._flow(tree, child, defs, seen)
+                inner += self._flow(tree, child, defs, seen, bindings)
             if self._is_sanitizer(fn_text):
                 return [(k, True) for k, _ in inner]
             return inner
@@ -211,17 +253,18 @@ class TaintAnalyzer:
 
         if t == "identifier":
             parent = node.parent
-            if parent is not None and parent.type == "call_expression" and parent.child_by_field_name("function") == node:
+            if (parent is not None and parent.type == "call_expression"
+                    and parent.child_by_field_name("function") == node):
                 return out
             name = tree.text(node)
             scope = self._enclosing_function(node)
             marker = ("identifier", scope.start_byte if scope is not None else -1, name)
             if marker not in seen:
                 if name in defs:
-                    for d in defs[name]:
-                        out += self._flow(tree, d, defs, seen | {marker})
+                    for definition in defs[name]:
+                        out += self._flow(tree, definition, defs, seen | {marker}, bindings)
                 else:
-                    out += self._parameter_flow(tree, node, name, seen | {marker})
+                    out += self._parameter_flow(tree, node, name, seen | {marker}, bindings)
             return out
 
         if t == "string_literal" and self._inside_macro(node):
@@ -230,14 +273,14 @@ class TaintAnalyzer:
                 marker = ("identifier", scope.start_byte if scope is not None else -1, name)
                 if marker not in seen:
                     if name in defs:
-                        for d in defs[name]:
-                            out += self._flow(tree, d, defs, seen | {marker})
+                        for definition in defs[name]:
+                            out += self._flow(tree, definition, defs, seen | {marker}, bindings)
                     else:
-                        out += self._parameter_flow(tree, node, name, seen | {marker})
+                        out += self._parameter_flow(tree, node, name, seen | {marker}, bindings)
             return out
 
         for child in node.children:
-            out += self._flow(tree, child, defs, seen)
+            out += self._flow(tree, child, defs, seen, bindings)
         return out
 
     @staticmethod

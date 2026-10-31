@@ -570,3 +570,53 @@ def test_nested_direct_helper_parameters_propagate():
     }
     """
     assert sev(src) == S.HIGH
+
+
+# ---- Same-file helper return values --------------------------------------
+
+def test_direct_helper_returning_env_var_is_tainted():
+    src = """
+    fn load_program() -> String {
+        std::env::var("PROGRAM").unwrap()
+    }
+    fn main() {
+        Command::new(load_program()).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_helper_returning_parameter_keeps_taint():
+    src = """
+    fn identity(s: String) -> String { s }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(identity(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_helper_returning_constant_does_not_taint_from_unused_input():
+    src = """
+    fn constant(_value: String) -> String { String::from("hello") }
+    fn main() {
+        let untrusted = std::env::args().nth(1).unwrap();
+        Command::new("echo").arg(constant(untrusted)).spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
+
+
+def test_helper_returning_local_variable_keeps_taint():
+    src = """
+    fn identity(s: String) -> String {
+        let value = s;
+        value
+    }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(identity(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
