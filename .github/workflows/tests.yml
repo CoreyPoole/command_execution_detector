@@ -45,3 +45,17 @@ jobs:
         with:
           name: cede-python-dist
           path: dist/*
+
+  gui-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install Tk and virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth python3-tk
+      - name: Install project and pytest
+        run: python -m pip install -e ".[dev]"
+      - name: Exercise Tkinter scan controls
+        run: xvfb-run -a python -m pytest tests/test_gui_live.py -q
