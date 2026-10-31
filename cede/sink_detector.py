@@ -45,7 +45,7 @@ class SinkDetector:
                 continue
             text = tree.text(node)
             for name in re.findall(
-                r"\\b(?:std::process::|process::)Command\\s+as\\s+([A-Za-z_]\\w*)",
+                r"\b(?:std::process::|process::)Command\s+as\s+([A-Za-z_]\w*)",
                 text,
             ):
                 aliases.add(name)
