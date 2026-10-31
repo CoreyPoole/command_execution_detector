@@ -36,6 +36,7 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
 | `cede/gui.py` | MainWindow |
 
 ## Known limits
-- Taint tracking is per function and ignores statement order; function parameters are not treated as sources.
-- Sanitizers are recognised by name (see `DetectionRules.sanitizers`).
-- Aliased imports (`use std::process::Command as Cmd`) are not resolved.
+- Taint tracking is per function, is order-aware for simple straight-line statements, and cannot generally trace values passed through function parameters or calls to other functions.
+- External sanitizer functions are recognized by configured names; local sanitizers are only accepted when their bodies match a narrowly recognized alphanumeric-filter pattern. This is not a proof of security.
+- Simple `use std::process::Command as Cmd` aliases are recognized; more complex import resolution is not supported.
+- The analyzer is intentionally heuristic; evaluate findings and potential false negatives manually.
