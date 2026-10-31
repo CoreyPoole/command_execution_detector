@@ -9,6 +9,7 @@ from .detection_rules import DetectionRules
 from .models import Finding, ParseError, Severity, VulnerabilityReport
 from .report_exporter import ReportExporter
 from .scan_controller import ScanController
+from .gui_utils import source_context
 
 _COLORS = {Severity.HIGH: "#c0392b", Severity.MEDIUM: "#d68910", Severity.LOW: "#2874a6"}
 
@@ -25,6 +26,9 @@ class MainWindow(tk.Tk):
         self.filter: Severity | None = None
         self._shown: list[Finding] = []
         self._results: queue.Queue = queue.Queue()
+        self._busy = False
+        self._cancel_event = threading.Event()
+        self._scan_buttons = []
         self._build_ui()
         self._refresh()
 
@@ -34,7 +38,13 @@ class MainWindow(tk.Tk):
         bar.pack(fill="x")
         for text, cmd in [("Scan File", self.on_scan_file), ("Scan Project", self.on_scan_project),
                           ("Export Report", self.on_export), ("Detection Rules", self.on_rules)]:
-            ttk.Button(bar, text=text, command=cmd).pack(side="left", padx=(0, 6))
+            button = ttk.Button(bar, text=text, command=cmd)
+            button.pack(side="left", padx=(0, 6))
+            if text.startswith("Scan "):
+                self._scan_buttons.append(button)
+        self.cancel_button = ttk.Button(bar, text="Cancel Scan",
+                                        command=self.on_cancel, state="disabled")
+        self.cancel_button.pack(side="left", padx=(0, 6))
 
         self._filter_var = tk.StringVar(value="All")
         right = ttk.Frame(bar)
@@ -93,7 +103,22 @@ class MainWindow(tk.Tk):
         choice = self._dialog("Scan project", f"Project root: {root}\nFound {n} .rs files.", ["Cancel", "Scan"])
         if choice == "Scan":
             self.status.set(f"Scanning {n} files…")
-            self._run_async(lambda: self.controller.scan_project(Path(root)), self._show_report)
+            self._run_async(
+                lambda: self.controller.scan_project(
+                    Path(root), progress=self._report_progress,
+                    cancel=self._cancel_event.is_set
+                ),
+                self._show_report,
+            )
+
+    def on_cancel(self):
+        if self._busy:
+            self._cancel_event.set()
+            self.status.set("Cancelling scan…")
+
+    def _report_progress(self, current, total, file):
+        # This callback may be invoked on the worker thread.
+        self._results.put(("progress", current, total, file))
 
     def on_filter_changed(self):
         label = self._filter_var.get()
@@ -169,35 +194,59 @@ class MainWindow(tk.Tk):
             for label, value, tag in [("File: ", str(f.file), None), ("Line: ", str(f.line), None),
                                       ("Severity: ", f.severity.value, f.severity.value),
                                       ("Pattern: ", f.pattern, None), ("Reason: ", f.reason, None),
-                                      ("Remediation: ", f.remediation, None)]:
+                                      ("Remediation: ", f.remediation, None),
+                                      ("Source context: ", source_context(f.file, f.line), None)]:
                 self.detail.insert("end", label, "label")
                 self.detail.insert("end", value + "\n\n", tag or ())
         self.detail.configure(state="disabled")
 
     def _run_async(self, work, done):
-        """Run work() on a thread so the window stays responsive; deliver the result on the UI thread."""
+        """One scan at a time; worker threads never touch Tk widgets."""
+        if self._busy:
+            return
+        self._busy = True
+        self._cancel_event = threading.Event()
+        for button in self._scan_buttons:
+            button.state(["disabled"])
+        self.cancel_button.state(["!disabled"])
+
         def target():
             try:
-                self._results.put((done, work(), None))
-            except Exception as exc:                      # noqa: BLE001 - reported to the user
-                self._results.put((done, None, exc))
+                self._results.put(("done", done, work(), None))
+            except Exception as exc:  # Worker errors are shown on the UI thread.
+                self._results.put(("done", done, None, exc))
         threading.Thread(target=target, daemon=True).start()
         self.after(50, self._poll)
 
     def _poll(self):
-        try:
-            done, result, exc = self._results.get_nowait()
-        except queue.Empty:
+        while True:
+            try:
+                message = self._results.get_nowait()
+            except queue.Empty:
+                break
+            if message[0] == "progress":
+                _, current, total, file = message
+                if not self._cancel_event.is_set():
+                    self.status.set(f"Scanning {current}/{total}: {file.name}")
+                continue
+
+            _, done, result, exc = message
+            self._busy = False
+            for button in self._scan_buttons:
+                button.state(["!disabled"])
+            self.cancel_button.state(["disabled"])
+            if self._cancel_event.is_set():
+                self.status.set("Scan cancelled; previous results retained.")
+            elif exc is None:
+                done(result)
+            elif isinstance(exc, ParseError):
+                self.status.set("Parse error.")
+                self.show_parse_error(exc)
+            else:
+                self.status.set("Scan failed.")
+                messagebox.showerror("Scan failed", str(exc))
+        if self._busy:
             self.after(50, self._poll)
-            return
-        if exc is None:
-            done(result)
-        elif isinstance(exc, ParseError):
-            self.status.set("Parse error.")
-            self.show_parse_error(exc)
-        else:
-            self.status.set("Scan failed.")
-            messagebox.showerror("Scan failed", str(exc))
 
     def _dialog(self, title: str, message: str, buttons: list[str]) -> str:
         win = tk.Toplevel(self)

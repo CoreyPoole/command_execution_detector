@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cede-command-execution-detector"
+version = "0.2.0"
+description = "Static analysis of Rust command-execution patterns"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["tree-sitter>=0.25,<0.27", "tree-sitter-rust>=0.24,<0.25"]
+
+[project.scripts]
+cede = "cede.cli:main"
+
+[project.gui-scripts]
+cede-gui = "cede.gui:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "build>=1.2,<3"]
+
+[tool.setuptools]
+packages = ["cede", "benchmarks"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+benchmarks = ["manifest.json", "fixtures/*.rs"]

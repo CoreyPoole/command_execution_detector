@@ -1,0 +1,36 @@
+name: Scan real-world Rust projects
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v0-2-analysis-gui-release]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install CEDE
+        run: python -m pip install .
+      - name: Fetch pinned upstream Rust code
+        run: |
+          mkdir -p external reports
+          git clone -q --depth 1 --branch 14.1.1 https://github.com/BurntSushi/ripgrep.git external/ripgrep
+          git clone -q --depth 1 --branch v10.2.0 https://github.com/sharkdp/fd.git external/fd
+          git clone -q --depth 1 --branch v1.18.0 https://github.com/sharkdp/hyperfine.git external/hyperfine
+      - name: Run static scans (do not execute upstream Rust code)
+        run: |
+          for project in ripgrep fd hyperfine; do
+            python -m cede "external/$project" --format json --fail-on none -o "reports/$project.json" >/dev/null
+          done
+          python scripts/summarize_real_world.py reports > reports/summary.md
+          cat reports/summary.md
+      - name: Upload reports for human triage
+        uses: actions/upload-artifact@v4
+        with:
+          name: cede-real-world-reports
+          path: reports/*

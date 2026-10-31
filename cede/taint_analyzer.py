@@ -39,10 +39,15 @@ class TaintAnalyzer:
         self._local_fns: dict[str, bool] = {}
         self._function_nodes: dict = {}
         self._callsites: dict = {}
+        self._external_param_flows: dict = {}
+        self._external_call_returns: dict = {}
 
     # -- public API ---------------------------------------------------------
-    def trace(self, tree: SyntaxTree, sinks: list[Sink]) -> list[TaintPath]:
+    def trace(self, tree: SyntaxTree, sinks: list[Sink],
+              external_param_flows=None, external_call_returns=None) -> list[TaintPath]:
         # Never carry syntax nodes/definitions from one source tree to another.
+        self._external_param_flows = external_param_flows or {}
+        self._external_call_returns = external_call_returns or {}
         self._defs_cache.clear()
         self._local_fns = self._collect_local_fns(tree, sinks)
         self._index_local_calls(tree)
@@ -151,7 +156,7 @@ class TaintAnalyzer:
         if name not in params:
             return []
         index = params.index(name)
-        flows = []
+        flows = list(self._external_param_flows.get(key, []))
         for call in self._callsites.get(tree.text(fn_name), []):
             args = call.child_by_field_name("arguments")
             if args is None or len(args.named_children) <= index:
@@ -235,6 +240,9 @@ class TaintAnalyzer:
             fn = node.child_by_field_name("function")
             fn_text = tree.text(fn) if fn is not None else ""
             sources = [(kind, False) for kind in self._sources_in(fn_text)]
+            # A project scan may resolve a function defined in another file.
+            if node.start_byte in self._external_call_returns:
+                return sources + list(self._external_call_returns[node.start_byte])
             local_fn = (self._function_nodes.get(fn_text)
                         if fn is not None and fn.type == "identifier" else None)
             if local_fn is not None and not self._is_sanitizer(fn_text):
@@ -312,6 +320,31 @@ class TaintAnalyzer:
             return self._defs_cache[key]
         defs: dict[str, list] = {}
 
+        # Visibility of a local declaration is limited to its enclosing block.
+        # An inner `let` must not overwrite a different outer binding.
+        site = min(
+            (n for n in tree.walk(fn)
+             if n.start_byte <= cutoff <= n.end_byte),
+            key=lambda n: n.end_byte - n.start_byte,
+            default=fn,
+        )
+        visible_blocks = set()
+        cursor = site
+        while cursor is not None:
+            if cursor.type == "block":
+                visible_blocks.add(cursor.id)
+            cursor = cursor.parent
+
+        def conditional(n):
+            parent = n.parent
+            while parent is not None and parent != fn:
+                if parent.type in ("if_expression", "match_expression",
+                                   "while_expression", "for_expression",
+                                   "loop_expression"):
+                    return True
+                parent = parent.parent
+            return False
+
         def add(name, expr):
             defs.setdefault(name, []).append(expr)
 
@@ -323,18 +356,45 @@ class TaintAnalyzer:
                 continue
             t = n.type
             if t in ("let_declaration", "let_condition"):
+                # Do not leak inner-block shadowed locals into outer scope.
+                block = n.parent
+                while block is not None and block.type not in ("block", "function_item"):
+                    block = block.parent
+                if block is not None and block.type == "block" and block.id not in visible_blocks:
+                    continue
                 pat, val = n.child_by_field_name("pattern"), n.child_by_field_name("value")
                 if pat is not None and val is not None:
                     for name in pattern_names(pat):
-                        defs[name] = [val]
+                        if conditional(n):
+                            add(name, val)
+                        else:
+                            defs[name] = [val]
             elif t in ("assignment_expression", "compound_assignment_expr"):
                 left, right = n.child_by_field_name("left"), n.child_by_field_name("right")
                 if left is not None and right is not None:
                     for name in pattern_names(left):
-                        if t == "assignment_expression":
+                        if t == "assignment_expression" and not conditional(n):
                             defs[name] = [right]
                         else:
+                            # A branch/loop may not execute, so merge the
+                            # incoming and assigned paths conservatively.
                             add(name, right)
+            elif t == "match_arm":
+                # A pattern such as Ok(value) binds the matched expression.
+                # This overapproximates variants rather than proving a path.
+                pat = n.child_by_field_name("pattern")
+                if pat is None and n.named_children:
+                    pat = n.named_children[0]
+                matched = n.parent
+                while matched is not None and matched.type != "match_expression":
+                    matched = matched.parent
+                if pat is not None and matched is not None and matched.named_children:
+                    subject = matched.named_children[0]
+                    for identifier in tree.walk(pat):
+                        if identifier.type == "identifier":
+                            name = tree.text(identifier)
+                            if name and (name[0].islower() or name[0] == "_"):
+                                add(name, subject)
             elif t == "for_expression":
                 pat, val = n.child_by_field_name("pattern"), n.child_by_field_name("value")
                 if pat is not None and val is not None:
