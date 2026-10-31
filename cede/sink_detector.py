@@ -24,9 +24,10 @@ class SinkDetector:
     def find_sinks(self, tree: SyntaxTree) -> list[Sink]:
         sinks: list[Sink] = []
 
+        aliases = self._command_aliases(tree)
         for fn in tree.functions():
             for call in tree.calls_in(fn):
-                if self._is_command_new(tree, call):
+                if self._is_command_new(tree, call, aliases):
                     sinks.append(self._build_sink(tree, call, fn))
 
         # Do not independently report arbitrary shell-like strings.
@@ -35,17 +36,29 @@ class SinkDetector:
 
     # -- Command::new(...) chains ----------------------------
 
-    def _is_command_new(self, tree, call) -> bool:
-        fn = call.child_by_field_name("function")
+    @staticmethod
+    def _command_aliases(tree) -> set[str]:
+        import re
+        aliases = set()
+        for node in tree.walk():
+            if node.type != "use_declaration":
+                continue
+            text = tree.text(node)
+            for name in re.findall(
+                r"\\b(?:std::process::|process::)Command\\s+as\\s+([A-Za-z_]\\w*)",
+                text,
+            ):
+                aliases.add(name)
+        return aliases
 
+    def _is_command_new(self, tree, call, aliases: set[str]) -> bool:
+        fn = call.child_by_field_name("function")
         if fn is None or fn.type != "scoped_identifier":
             return False
-
         text = tree.text(fn)
-
-        return any(
-            text == api or text.endswith("::" + api)
-            for api in self.rules.sink_apis
+        return (
+            any(text == api or text.endswith("::" + api) for api in self.rules.sink_apis)
+            or any(text == alias + "::new" for alias in aliases)
         )
 
     def _build_sink(self, tree, call, fn_node) -> Sink:
@@ -86,8 +99,10 @@ class SinkDetector:
                 a = outer.child_by_field_name("arguments")
                 if a is not None:
                     for expr in a.named_children:
-                        arg_nodes.append(expr)
-                        arg_sites.append((expr, expr.start_byte))
+                        values = self._expand_args(expr) if name == "args" else [expr]
+                        for value in values:
+                            arg_nodes.append(value)
+                            arg_sites.append((value, value.start_byte))
 
             if name in _CHAIN_METHODS:
                 last = outer
@@ -156,10 +171,23 @@ class SinkDetector:
                 a = call.child_by_field_name("arguments")
                 if a is not None:
                     for expr in a.named_children:
-                        args.append(expr)
-                        sites.append((expr, expr.start_byte))
+                        values = self._expand_args(expr) if name == "args" else [expr]
+                        for value in values:
+                            args.append(value)
+                            sites.append((value, value.start_byte))
 
         return args, methods, sites
+
+    @staticmethod
+    def _expand_args(expr):
+        # Only split array literals. Other iterables retain their original expression.
+        if expr.type == "array_expression":
+            return list(expr.named_children)
+        if expr.type == "reference_expression":
+            inner = next((c for c in expr.named_children if c.type == "array_expression"), None)
+            if inner is not None:
+                return list(inner.named_children)
+        return [expr]
 
     @staticmethod
     def _bound_name(tree, chain_end) -> str | None:

@@ -477,3 +477,30 @@ def test_local_branching_noop_is_not_a_sanitizer():
     }
     """
     assert sev(src) == S.HIGH
+
+
+def test_alias_import_command_is_detected():
+    src = """
+    use std::process::Command as Cmd;
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Cmd::new("sh").arg("-c").arg(input).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_args_array_contains_shell_flag():
+    src = """
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").args(["-c", &input]).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_args_array_static_shell_is_low():
+    assert sev(
+        'fn f(){ Command::new("sh").args(["-c", "echo hello"]).spawn().unwrap(); }'
+    ) == S.LOW
