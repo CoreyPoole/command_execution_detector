@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field, fields, asdict
 from pathlib import Path
 import json
+from .models import SourceKind
 
 
 @dataclass
@@ -17,6 +18,21 @@ class DetectionRules:
         "env::var": "EnvVar", "read_to_string": "File", "fs::read": "File",
         "TcpStream": "Network", "reqwest": "Network", "recv": "Network",
     })
+
+    def __post_init__(self):
+        for field_name in ("sink_apis", "spawn_methods", "shell_patterns",
+                           "shell_flags", "sanitizers"):
+            values = getattr(self, field_name)
+            if not isinstance(values, list) or any(
+                not isinstance(value, str) or not value for value in values
+            ):
+                raise ValueError(f"{field_name} must be a list of nonempty strings")
+        if not isinstance(self.sources, dict) or any(
+            not isinstance(key, str) or not key or not isinstance(value, str)
+            or value not in {kind.value for kind in SourceKind}
+            for key, value in self.sources.items()
+        ):
+            raise ValueError("sources must map nonempty strings to valid SourceKind values")
 
     @classmethod
     def load(cls, path: Path) -> "DetectionRules":

@@ -36,7 +36,8 @@ class ReportExporter:
         }
         return json.dumps(data, indent=2)
 
-    def save(self, r: VulnerabilityReport, path: Path, findings=None) -> None:
+    def save(self, r: VulnerabilityReport, path: Path, findings=None, fmt: str | None = None) -> None:
         path = Path(path)
-        text = self.to_json(r, findings) if path.suffix.lower() == ".json" else self.to_text(r, findings)
+        use_json = (fmt == "json") if fmt is not None else path.suffix.lower() == ".json"
+        text = self.to_json(r, findings) if use_json else self.to_text(r, findings)
         path.write_text(text, encoding="utf-8")

@@ -48,6 +48,9 @@ class CliApp:
         if not target.exists():
             print(f"error: {target} does not exist", file=sys.stderr)
             return 2
+        if target.is_file() and target.suffix != ".rs":
+            print(f"error: {target} is not a Rust (.rs) file", file=sys.stderr)
+            return 2
         try:
             report = controller.scan_project(target)
         except OSError as e:
@@ -57,7 +60,11 @@ class CliApp:
         shown = [f for f in report.findings if f.severity.rank <= _LEVELS[args.min_severity].rank]
         self.print_report(report, shown, args.format)
         if args.output:
-            self.exporter.save(report, Path(args.output), shown)
+            try:
+                self.exporter.save(report, Path(args.output), shown, fmt=args.format)
+            except OSError as e:
+                print(f"error: cannot save report: {e}", file=sys.stderr)
+                return 2
         if args.fail_on != "none" and any(f.severity.rank <= _LEVELS[args.fail_on].rank for f in report.findings):
             return 1
         return 0

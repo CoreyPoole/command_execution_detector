@@ -25,7 +25,6 @@ _IDENTITY_CALLS = {
     "unwrap", "expect", "chars", "bytes", "as_bytes", "iter", "into_iter", "collect", "to_vec",
 }
 # Control flow that suggests the body checks or branches on its input.
-_CHECK_NODES = {"if_expression", "match_expression", "while_expression", "macro_invocation"}
 
 
 class TaintAnalyzer:
@@ -36,14 +35,17 @@ class TaintAnalyzer:
             for k, v in self.rules.sources.items()
         ]
         self._defs_cache: dict = {}
-        # function name defined in the scanned file -> True if its body does real work
+        # function name defined in this file -> True only for a verified allow-list sanitizer
         self._local_fns: dict[str, bool] = {}
+        self._function_nodes: dict = {}
+        self._callsites: dict = {}
 
     # -- public API ---------------------------------------------------------
     def trace(self, tree: SyntaxTree, sinks: list[Sink]) -> list[TaintPath]:
         # Never carry syntax nodes/definitions from one source tree to another.
         self._defs_cache.clear()
         self._local_fns = self._collect_local_fns(tree, sinks)
+        self._index_local_calls(tree)
         return [self._trace_sink(tree, s) for s in sinks]
 
     def _collect_local_fns(self, tree: SyntaxTree, sinks: list[Sink]) -> dict[str, bool]:
@@ -59,38 +61,159 @@ class TaintAnalyzer:
             if n.type == "function_item":
                 name = n.child_by_field_name("name")
                 if name is not None:
-                    result[tree.text(name)] = self._body_does_work(tree, n)
+                    result[tree.text(name)] = self._body_sanitizes(tree, n)
         return result
 
     @staticmethod
-    def _body_does_work(tree: SyntaxTree, fn_item) -> bool:
-        """False for passthrough bodies (return the input, or only identity-style calls)."""
+    def _body_sanitizes(tree: SyntaxTree, fn_item) -> bool:
+        """Recognize only the narrow, inspectable alphanumeric filter used by our sample.
+
+        An arbitrary branch, log statement, or function call is NOT proof of
+        sanitization. Unknown local helpers fail closed (remain unsanitized).
+        """
         body = fn_item.child_by_field_name("body")
-        if body is None:
+        params = fn_item.child_by_field_name("parameters")
+        if body is None or params is None:
             return False
-        for n in tree.walk(body):
-            if n.type in _CHECK_NODES:
-                return True
-            if n.type == "call_expression":
-                f = n.child_by_field_name("function")
-                last = _PATH_SPLIT.split(tree.text(f))[-1] if f is not None else ""
-                if last not in _IDENTITY_CALLS:
-                    return True
-        return False
+        body_text = tree.text(body).strip()
+        if not (body_text.startswith("{") and body_text.endswith("}")):
+            return False
+        expr = re.sub(r"\s+", "", body_text[1:-1])
+        match = re.fullmatch(
+            r"(?P<src>[A-Za-z_]\w*)\.chars\(\)"
+            r"\.filter\(\|(?P<item>[A-Za-z_]\w*)\|"
+            r"(?P=item)\.is_(?:ascii_)?alphanumeric\(\)\)"
+            r"\.collect\(\);?",
+            expr,
+        )
+        return bool(
+            match and re.search(r"\b" + re.escape(match["src"]) + r"\s*:", tree.text(params))
+        )
+
+    # -- local function parameter propagation -------------------------------
+    def _index_local_calls(self, tree: SyntaxTree) -> None:
+        """Index direct local calls only; do not guess the target of methods."""
+        groups = {}
+        for fn in tree.functions():
+            name = fn.child_by_field_name("name")
+            if name is not None:
+                groups.setdefault(tree.text(name), []).append(fn)
+        # Duplicate names across modules cannot safely be resolved here.
+        self._function_nodes = {name: nodes[0] for name, nodes in groups.items()
+                                if len(nodes) == 1}
+        self._callsites = {name: [] for name in self._function_nodes}
+        for call in tree.walk():
+            if call.type == "call_expression":
+                fn = call.child_by_field_name("function")
+                if fn is not None and fn.type == "identifier":
+                    name = tree.text(fn)
+                    if name in self._callsites:
+                        self._callsites[name].append(call)
+
+    @staticmethod
+    def _enclosing_function(node):
+        while node is not None:
+            if node.type == "function_item":
+                return node
+            node = node.parent
+        return None
+
+    @staticmethod
+    def _parameter_names(tree, fn):
+        params = fn.child_by_field_name("parameters")
+        if params is None:
+            return []
+        names = []
+        for p in params.named_children:
+            if p.type != "parameter":
+                continue
+            pattern = p.child_by_field_name("pattern")
+            if pattern is None:
+                pattern = next((n for n in p.named_children
+                                if n.type == "identifier"), None)
+            names.append(tree.text(pattern) if pattern is not None and
+                         pattern.type == "identifier" else None)
+        return names
+
+    def _parameter_flow(self, tree, node, name, seen, bindings=None):
+        """Propagate values from direct same-file caller arguments into a parameter."""
+        fn = self._enclosing_function(node)
+        if fn is None:
+            return []
+        key = (fn.start_byte, name)
+        if bindings is not None and key in bindings:
+            actual, caller_defs, caller_bindings = bindings[key]
+            return self._flow(tree, actual, caller_defs, seen, caller_bindings)
+        fn_name = fn.child_by_field_name("name")
+        if fn_name is None or self._function_nodes.get(tree.text(fn_name)) != fn:
+            return []
+        params = self._parameter_names(tree, fn)
+        if name not in params:
+            return []
+        index = params.index(name)
+        flows = []
+        for call in self._callsites.get(tree.text(fn_name), []):
+            args = call.child_by_field_name("arguments")
+            if args is None or len(args.named_children) <= index:
+                continue
+            caller = self._enclosing_function(call)
+            if caller is None:
+                continue
+            actual = args.named_children[index]
+            defs = self._defs(tree, caller, actual.start_byte)
+            flows += self._flow(tree, actual, defs, seen)
+        return flows
+
+    def _local_return_flow(self, tree, call, local_fn, seen, parent_defs, parent_bindings):
+        """Follow simple return expressions through a direct same-file call.
+
+        Return values from branches are conservatively combined. Only unique
+        direct function names are resolved; imports and traits are not.
+        """
+        marker = ("return", local_fn.start_byte)
+        if marker in seen:
+            return []
+        args = call.child_by_field_name("arguments")
+        body = local_fn.child_by_field_name("body")
+        if args is None or body is None:
+            return []
+        bindings = dict(parent_bindings or {})
+        for name, actual in zip(self._parameter_names(tree, local_fn), args.named_children):
+            if name is not None:
+                bindings[(local_fn.start_byte, name)] = (
+                    actual, parent_defs, parent_bindings
+                )
+        expressions = []
+        for node in tree.walk(body):
+            if node.type == "return_expression":
+                expressions.extend(node.named_children)
+        if body.named_children:
+            last = body.named_children[-1]
+            if last.type not in ("expression_statement", "let_declaration", "return_expression"):
+                expressions.append(last)
+        flows = []
+        for expr in expressions:
+            inner_defs = self._defs(tree, local_fn, expr.start_byte)
+            flows += self._flow(tree, expr, inner_defs, seen | {marker}, bindings)
+        return flows
 
     # -- per sink -----------------------------------------------------------
     def _trace_sink(self, tree: SyntaxTree, sink: Sink) -> TaintPath:
         if sink.function_node is None:                       # bare "sh -c" string
             return TaintPath(None, sink, sanitized=False, reachable=False)
-        # Only include definitions that precede this command call.
-        defs = self._defs(tree, sink.function_node, sink.node.start_byte)
-        exprs = ([sink.program_node] if sink.program_node is not None else []) + list(sink.arg_nodes)
+        # Trace each argument at its own source position, not at Command::new.
+        # Builder variables may receive arguments long after construction.
         flows: list[tuple[SourceKind, bool]] = []
-        for e in exprs:
-            flows += self._flow(tree, e, defs, frozenset())
         program_tainted = False
         if sink.program_node is not None:
-            program_tainted = any(not s for _, s in self._flow(tree, sink.program_node, defs, frozenset()))
+            program_defs = self._defs(tree, sink.function_node, sink.program_node.start_byte)
+            program_flows = self._flow(tree, sink.program_node, program_defs, frozenset())
+            flows += program_flows
+            program_tainted = any(not sanitized for _, sanitized in program_flows)
+        sites = sink.arg_sites or [(arg, arg.start_byte) for arg in sink.arg_nodes]
+        for arg, position in sites:
+            defs = self._defs(tree, sink.function_node, position)
+            flows += self._flow(tree, arg, defs, frozenset())
         unsanitized = [k for k, s in flows if not s]
         sanitized = [k for k, s in flows if s]
         if unsanitized:
@@ -104,18 +227,23 @@ class TaintAnalyzer:
         return min(kinds, key=_PRIORITY.index)
 
     # -- expression flow ----------------------------------------------------
-    def _flow(self, tree, node, defs, seen):
+    def _flow(self, tree, node, defs, seen, bindings=None):
         out: list[tuple[SourceKind, bool]] = []
         t = node.type
 
         if t == "call_expression":
             fn = node.child_by_field_name("function")
             fn_text = tree.text(fn) if fn is not None else ""
-            inner: list[tuple[SourceKind, bool]] = []
-            for kind in self._sources_in(fn_text):
-                inner.append((kind, False))
+            sources = [(kind, False) for kind in self._sources_in(fn_text)]
+            local_fn = (self._function_nodes.get(fn_text)
+                        if fn is not None and fn.type == "identifier" else None)
+            if local_fn is not None and not self._is_sanitizer(fn_text):
+                return sources + self._local_return_flow(
+                    tree, node, local_fn, seen, defs, bindings
+                )
+            inner = list(sources)
             for child in node.children:
-                inner += self._flow(tree, child, defs, seen)
+                inner += self._flow(tree, child, defs, seen, bindings)
             if self._is_sanitizer(fn_text):
                 return [(k, True) for k, _ in inner]
             return inner
@@ -125,23 +253,34 @@ class TaintAnalyzer:
 
         if t == "identifier":
             parent = node.parent
-            if parent is not None and parent.type == "call_expression" and parent.child_by_field_name("function") == node:
+            if (parent is not None and parent.type == "call_expression"
+                    and parent.child_by_field_name("function") == node):
                 return out
             name = tree.text(node)
-            if name not in seen:
-                for d in defs.get(name, []):
-                    out += self._flow(tree, d, defs, seen | {name})
+            scope = self._enclosing_function(node)
+            marker = ("identifier", scope.start_byte if scope is not None else -1, name)
+            if marker not in seen:
+                if name in defs:
+                    for definition in defs[name]:
+                        out += self._flow(tree, definition, defs, seen | {marker}, bindings)
+                else:
+                    out += self._parameter_flow(tree, node, name, seen | {marker}, bindings)
             return out
 
         if t == "string_literal" and self._inside_macro(node):
             for name in _INLINE_CAPTURE.findall(tree.text(node)):
-                if name not in seen:
-                    for d in defs.get(name, []):
-                        out += self._flow(tree, d, defs, seen | {name})
+                scope = self._enclosing_function(node)
+                marker = ("identifier", scope.start_byte if scope is not None else -1, name)
+                if marker not in seen:
+                    if name in defs:
+                        for definition in defs[name]:
+                            out += self._flow(tree, definition, defs, seen | {marker}, bindings)
+                    else:
+                        out += self._parameter_flow(tree, node, name, seen | {marker}, bindings)
             return out
 
         for child in node.children:
-            out += self._flow(tree, child, defs, seen)
+            out += self._flow(tree, child, defs, seen, bindings)
         return out
 
     @staticmethod

@@ -421,3 +421,272 @@ def test_local_identity_wrapper_is_not_a_sanitizer():
         '    Command::new("ls").arg(dir).output().unwrap();\n'
         '}\n'
     ) == S.HIGH
+
+# ---- Temporal builder state and sanitizer verification -------------------
+
+def test_builder_argument_introduced_after_constructor_is_tainted():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        let input = std::env::args().nth(1).unwrap();
+        cmd.arg("-c");
+        cmd.arg(input);
+        cmd.spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_builder_argument_assignments_after_use_are_not_retroactive():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("echo");
+        let mut input = String::from("safe");
+        cmd.arg(&input);
+        input = std::env::var("LATER").unwrap();
+        cmd.spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
+
+
+def test_local_logger_is_not_a_sanitizer():
+    src = """
+    fn sanitize(s: String) -> String {
+        println!("Checking input");
+        s
+    }
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        let result = sanitize(input);
+        Command::new("sh").arg("-c").arg(result).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_local_branching_noop_is_not_a_sanitizer():
+    src = """
+    fn validate(s: String) -> String {
+        if s.len() > 0 { return s; }
+        s
+    }
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(validate(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_alias_import_command_is_detected():
+    src = """
+    use std::process::Command as Cmd;
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Cmd::new("sh").arg("-c").arg(input).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_args_array_contains_shell_flag():
+    src = """
+    fn f() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").args(["-c", &input]).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_args_array_static_shell_is_low():
+    assert sev(
+        'fn f(){ Command::new("sh").args(["-c", "echo hello"]).spawn().unwrap(); }'
+    ) == S.LOW
+
+
+def test_builder_argument_after_execution_is_ignored():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c");
+        cmd.arg("echo safe");
+        cmd.spawn().unwrap();
+        let later = std::env::args().nth(1).unwrap();
+        cmd.arg(later);
+    }
+    """
+    assert sev(src) == S.LOW
+
+
+def test_builder_arguments_before_execution_are_included():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        let input = std::env::args().nth(1).unwrap();
+        cmd.arg("-c");
+        cmd.arg(input);
+        cmd.spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+# ---- Same-file direct caller propagation ---------------------------------
+
+def test_untrusted_caller_arg_flows_into_command_helper():
+    src = """
+    fn run(command: String) {
+        Command::new("sh").arg("-c").arg(command).spawn().unwrap();
+    }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        run(input);
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_safe_caller_arg_is_not_tainted():
+    src = """
+    fn run(command: String) {
+        Command::new("echo").arg(command).spawn().unwrap();
+    }
+    fn main() { run(String::from("hello")); }
+    """
+    assert findings(src) == []
+
+
+def test_nested_direct_helper_parameters_propagate():
+    src = """
+    fn execute(command: String) {
+        Command::new("sh").arg("-c").arg(command).spawn().unwrap();
+    }
+    fn pass_along(value: String) { execute(value); }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        pass_along(input);
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+# ---- Same-file helper return values --------------------------------------
+
+def test_direct_helper_returning_env_var_is_tainted():
+    src = """
+    fn load_program() -> String {
+        std::env::var("PROGRAM").unwrap()
+    }
+    fn main() {
+        Command::new(load_program()).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_helper_returning_parameter_keeps_taint():
+    src = """
+    fn identity(s: String) -> String { s }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(identity(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_helper_returning_constant_does_not_taint_from_unused_input():
+    src = """
+    fn constant(_value: String) -> String { String::from("hello") }
+    fn main() {
+        let untrusted = std::env::args().nth(1).unwrap();
+        Command::new("echo").arg(constant(untrusted)).spawn().unwrap();
+    }
+    """
+    assert findings(src) == []
+
+
+def test_helper_returning_local_variable_keeps_taint():
+    src = """
+    fn identity(s: String) -> String {
+        let value = s;
+        value
+    }
+    fn main() {
+        let input = std::env::args().nth(1).unwrap();
+        Command::new("sh").arg("-c").arg(identity(input)).spawn().unwrap();
+    }
+    """
+    assert sev(src) == S.HIGH
+
+
+def test_reused_command_builder_reports_each_execution():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("sh");
+        cmd.arg("-c");
+        cmd.arg("echo okay");
+        cmd.spawn().unwrap();
+        let later = std::env::args().nth(1).unwrap();
+        cmd.arg(later);
+        cmd.spawn().unwrap();
+    }
+    """
+    result = findings(src)
+    assert len(result) == 2
+    assert [f.severity for f in result] == [S.HIGH, S.LOW]
+
+
+def test_reused_command_builder_does_not_confuse_first_execution():
+    src = """
+    fn f() {
+        let mut cmd = Command::new("echo");
+        cmd.arg("safe");
+        cmd.spawn().unwrap();
+        let later = std::env::var("AFTER").unwrap();
+        cmd.arg(later);
+        cmd.spawn().unwrap();
+    }
+    """
+    result = findings(src)
+    assert len(result) == 1
+    assert result[0].severity == S.MEDIUM
+
+
+# ---- CLI output and rules validation regressions -------------------------
+
+def test_cli_json_output_respects_format_even_with_txt_extension(tmp_path):
+    output = tmp_path / "report.txt"
+    code = CliApp().run([
+        str(SAMPLES / "safe.rs"), "--format", "json",
+        "-o", str(output), "--fail-on", "none",
+    ])
+    assert code == 0
+    assert json.loads(output.read_text())["summary"]["files_scanned"] == 1
+
+
+def test_cli_rejects_non_rust_file(tmp_path, capsys):
+    file = tmp_path / "notes.txt"
+    file.write_text("hello")
+    assert CliApp().run([str(file)]) == 2
+    assert "not a Rust" in capsys.readouterr().err
+
+
+def test_cli_handles_unwritable_output(tmp_path, capsys):
+    assert CliApp().run([
+        str(SAMPLES / "safe.rs"),
+        "-o", str(tmp_path / "no-such-dir" / "report.txt"),
+        "--fail-on", "none",
+    ]) == 2
+    assert "cannot save report" in capsys.readouterr().err
+
+
+def test_invalid_rules_are_rejected_with_clear_error(tmp_path, capsys):
+    rules = tmp_path / "bad_rules.json"
+    rules.write_text('{"sources": {"foo": "UnknownSource"}}')
+    assert CliApp().run([str(SAMPLES / "safe.rs"), "--rules", str(rules)]) == 2
+    assert "cannot load rules" in capsys.readouterr().err
+    rules.write_text('{"sanitizers": "sanitize"}')
+    assert CliApp().run([str(SAMPLES / "safe.rs"), "--rules", str(rules)]) == 2

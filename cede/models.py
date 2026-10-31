@@ -38,6 +38,7 @@ class Sink:
     node: object = None           # outermost syntax node of the call chain (used by the taint analyzer)
     program_node: object = None   # expression passed to Command::new(...)
     arg_nodes: list = field(default_factory=list)   # expressions passed to .arg()/.args()
+    arg_sites: list = field(default_factory=list)   # (expression, source position) for temporal taint tracing
     methods: list = field(default_factory=list)     # method names in the chain, in order
     function_node: object = None  # enclosing fn (scope for taint tracing)
 
