@@ -26,3 +26,12 @@ this corpus does **not** measure its sensitivity to real, unseen vulnerabilities
 Add independently reviewed positive/negative cases before drawing broader
 accuracy conclusions. A change to a fixture's expected label needs review:
 never silently relabel failures to make a green CI run.
+
+## Try the corpus in the application
+
+- CLI: `python -m cede rust_corpus --fail-on none` (shows findings and
+  the 12 *expected* parse errors for deliberately malformed examples).
+- GUI: `cede-gui`, then **Scan Project** and select `rust_corpus/`.
+- Focused CLI: `python -m cede rust_corpus/high/user_1_sink_1.rs`.
+
+Do not execute or compile the intentionally unsafe fixtures as real programs.
