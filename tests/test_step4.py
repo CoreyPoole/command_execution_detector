@@ -653,3 +653,40 @@ def test_reused_command_builder_does_not_confuse_first_execution():
     result = findings(src)
     assert len(result) == 1
     assert result[0].severity == S.MEDIUM
+
+
+# ---- CLI output and rules validation regressions -------------------------
+
+def test_cli_json_output_respects_format_even_with_txt_extension(tmp_path):
+    output = tmp_path / "report.txt"
+    code = CliApp().run([
+        str(SAMPLES / "safe.rs"), "--format", "json",
+        "-o", str(output), "--fail-on", "none",
+    ])
+    assert code == 0
+    assert json.loads(output.read_text())["summary"]["files_scanned"] == 1
+
+
+def test_cli_rejects_non_rust_file(tmp_path, capsys):
+    file = tmp_path / "notes.txt"
+    file.write_text("hello")
+    assert CliApp().run([str(file)]) == 2
+    assert "not a Rust" in capsys.readouterr().err
+
+
+def test_cli_handles_unwritable_output(tmp_path, capsys):
+    assert CliApp().run([
+        str(SAMPLES / "safe.rs"),
+        "-o", str(tmp_path / "no-such-dir" / "report.txt"),
+        "--fail-on", "none",
+    ]) == 2
+    assert "cannot save report" in capsys.readouterr().err
+
+
+def test_invalid_rules_are_rejected_with_clear_error(tmp_path, capsys):
+    rules = tmp_path / "bad_rules.json"
+    rules.write_text('{"sources": {"foo": "UnknownSource"}}')
+    assert CliApp().run([str(SAMPLES / "safe.rs"), "--rules", str(rules)]) == 2
+    assert "cannot load rules" in capsys.readouterr().err
+    rules.write_text('{"sanitizers": "sanitize"}')
+    assert CliApp().run([str(SAMPLES / "safe.rs"), "--rules", str(rules)]) == 2
