@@ -146,7 +146,7 @@ class MainWindow(tk.Tk):
                                             filetypes=[("Text report", "*.txt"), ("JSON report", "*.json")])
         if path:
             try:
-                self.exporter.save(self.report, Path(path), self._shown)
+                self.exporter.save(self.report, Path(path))
                 messagebox.showinfo("Export Report", f"Report saved to\n{path}")
             except OSError as e:
                 messagebox.showerror("Export Report", str(e))
