@@ -15,7 +15,9 @@ strings are never matched.
     python -m cede --dump-default-rules > my_rules.json   # starting point for custom rules
     python -m cede --gui                           # graphical interface (or: python -m cede.gui)
 
-Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad input.\n\nSeverity filters affect which findings appear in CLI output, but summary counts describe the entire scan. The GUI exports the full scan report even when a severity filter is selected.
+Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad input.
+
+Severity filters affect which findings appear in CLI output, but summary counts describe the entire scan. The GUI exports the full scan report even when a severity filter is selected.
 
 ## Tests
     python -m pytest tests
