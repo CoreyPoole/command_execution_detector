@@ -15,7 +15,7 @@ strings are never matched.
     python -m cede --dump-default-rules > my_rules.json   # starting point for custom rules
     python -m cede --gui                           # graphical interface (or: python -m cede.gui)
 
-Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad input.
+Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad input.\n\nSeverity filters affect which findings appear in CLI output, but summary counts describe the entire scan. The GUI exports the full scan report even when a severity filter is selected.
 
 ## Tests
     python -m pytest tests
@@ -36,7 +36,7 @@ Exit status: 0 = ok, 1 = a finding at/above `--fail-on` (default high), 2 = bad 
 | `cede/gui.py` | MainWindow |
 
 ## Known limits
-- Taint tracking is order-aware for simple straight-line code and supports direct, unambiguous helper calls and return values **within one Rust file**. It does not resolve cross-file calls, traits, imports, or general control flow. Branches may be combined conservatively.
+- Taint tracking is order-aware for simple straight-line code. Direct helper calls and return values are tracked within files, and unambiguous same-project module calls can be linked across files. Traits, wildcard imports, reexports, and general control flow are not resolved; branches may be combined conservatively.
 - External sanitizer functions are recognized by configured names; local sanitizers are only accepted when their bodies match a narrowly recognized alphanumeric-filter pattern. This is not a proof of security.
 - Simple `use std::process::Command as Cmd` aliases are recognized; more complex import resolution is not supported.
 - Command builders stored in local variables are tracked across simple method calls and repeated executions. Full Rust ownership, aliasing, and conditional execution semantics are not modeled.
