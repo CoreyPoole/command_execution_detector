@@ -20,7 +20,7 @@ cede-gui = "cede.gui:main"
 dev = ["pytest>=8,<10", "build>=1.2,<3"]
 
 [tool.setuptools]
-packages = ["cede", "benchmarks"]
+packages = ["cede", "benchmarks", "benchmarks.fixtures"]
 include-package-data = true
 
 [tool.setuptools.package-data]
