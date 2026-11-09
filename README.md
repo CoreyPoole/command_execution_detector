@@ -22,6 +22,32 @@ Severity filters affect which findings appear in CLI output, but summary counts 
 ## Tests
     python -m pytest tests
 
+## Final verification
+
+From the repository root:
+
+```bash
+python3 -m pip install -e ".[dev]"
+python3 -m pytest tests -q -rs
+python3 -m build
+python3 -m cede samples/vulnerable.rs --fail-on none
+python3 -m cede --gui
+```
+
+On macOS, two live Tkinter tests are intentionally skipped. The
+`gui-integration` job in `.github/workflows/tests.yml` runs them on
+Linux using Xvfb. Check that job in GitHub Actions before release.
+
+In the GUI, scan `samples/vulnerable.rs`, select **High**, and export
+a JSON report. The saved report should still contain all severities,
+including Low findings. Run the **Test Dashboard** separately on
+`rust_corpus` and `rust_projects`; expected parse-error cases appear
+as **SKIP** in that dashboard.
+
+Build output goes under `dist/`. The benchmark fixtures are packaged
+with the Python distribution; `rust_corpus/` and `rust_projects/` are
+larger development-only regression collections.
+
 ## Layout (maps to the SDS class diagram)
 | Module | SDS class(es) |
 |---|---|
