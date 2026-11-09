@@ -34,10 +34,6 @@ python3 -m cede samples/vulnerable.rs --fail-on none
 python3 -m cede --gui
 ```
 
-On macOS, two live Tkinter tests are intentionally skipped. The
-`gui-integration` job in `.github/workflows/tests.yml` runs them on
-Linux using Xvfb. Check that job in GitHub Actions before release.
-
 In the GUI, scan `samples/vulnerable.rs`, select **High**, and export
 a JSON report. The saved report should still contain all severities,
 including Low findings. Run the **Test Dashboard** separately on
@@ -131,8 +127,8 @@ the normal scan-results window untouched. All Rust samples are analyzed
 as source text and never executed.
 
 Run `python -m pytest tests/test_testing_dashboard.py -q` to test the
-comparison logic; the existing GUI integration workflow also exercises
-the dashboard using a virtual display.
+comparison logic. During class, have the testing team check the GUI
+and dashboard manually using the Software Test Plan.
 
 **These labels are curated regression expectations, not independent
 evidence of real-world vulnerability detection accuracy.** Suite folders
